@@ -1,0 +1,50 @@
+2026-06-21 20:20:02,147 - UALink - INFO - Starting comprehensive A-Z Testbench with DEEP TRACE
+2026-06-21 20:20:02,147 - UALink - INFO - --- Test A: UPLI Layer ---
+2026-06-21 20:20:02,148 - UALink - INFO - UPLI Request parity validated: 1
+2026-06-21 20:20:02,148 - UALink - INFO - --- Test B: Transaction Layer ---
+2026-06-21 20:20:02,148 - UALink - DEBUG - TLFlit assembled payload: ctrl_len=32 data_len=32 bytes
+2026-06-21 20:20:02,148 - UALink - INFO - TL Flit format validated
+2026-06-21 20:20:02,148 - UALink - INFO - --- Test C: Data Link Layer ---
+2026-06-21 20:20:02,149 - UALink - DEBUG - DLFlit built: op=0 seq=0 crc=5CFF7486 size=640
+2026-06-21 20:20:02,149 - UALink - INFO - DL Flit format validated
+2026-06-21 20:20:02,149 - UALink - INFO - --- Test D: Switch Routing ---
+2026-06-21 20:20:02,149 - UALink - INFO - Switch forward req to Acc=1 via Port=2
+2026-06-21 20:20:02,149 - UALink - INFO - Switch routing validated
+2026-06-21 20:20:02,149 - UALink - INFO - --- Test E: Deep End-to-End System Trace ---
+2026-06-21 20:20:02,150 - UALink - INFO - STEP 1: Physical Link Connection
+2026-06-21 20:20:02,150 - UALink - DEBUG - UPLI Port 0 connected
+2026-06-21 20:20:02,150 - UALink - INFO - Acc=1 port=0 connected to Peer=2
+2026-06-21 20:20:02,150 - UALink - DEBUG - UPLI Port 0 connected
+2026-06-21 20:20:02,150 - UALink - INFO - Acc=2 port=0 connected to Peer=1
+2026-06-21 20:20:02,150 - UALink - INFO - STEP 2: Initializing Credits
+2026-06-21 20:20:02,150 - UALink - DEBUG - A1 UPLI Credits: ReqPool=8, DataPool=20
+2026-06-21 20:20:02,150 - UALink - INFO - STEP 3: Originator generating UPLI Request
+2026-06-21 20:20:02,150 - UALink - DEBUG - Payload detail: SRC=1, DST=2, ADDR=0xdeadbeef, CMD=3, TAG=42
+2026-06-21 20:20:02,150 - UALink - DEBUG - Credit consumed: pool (rem: 7)
+2026-06-21 20:20:02,150 - UALink - INFO - UPLI Port 0 sent Request: cmd=3 addr=3735928559
+2026-06-21 20:20:02,150 - UALink - INFO - STEP 4: Transaction Layer Formatting
+2026-06-21 20:20:02,150 - UALink - DEBUG - UPLI Port 0 drain Req: tag=42 cmd=3 addr=3735928559
+2026-06-21 20:20:02,150 - UALink - DEBUG - TLFlit assembled payload: ctrl_len=32 data_len=32 bytes
+2026-06-21 20:20:02,150 - UALink - DEBUG - TL Flit Headers constructed: 0102030400000000000000000000000000000000000000000000000000000000
+2026-06-21 20:20:02,150 - UALink - DEBUG - TLFlit assembled payload: ctrl_len=32 data_len=32 bytes
+2026-06-21 20:20:02,150 - UALink - DEBUG - TL Payload size: 64 bytes
+2026-06-21 20:20:02,150 - UALink - INFO - STEP 5: Data Link Layer Formatting & Framing
+2026-06-21 20:20:02,152 - UALink - DEBUG - DLFlit built: op=0 seq=100 crc=46456E82 size=640
+2026-06-21 20:20:02,152 - UALink - DEBUG - DL Flit generated: OP=0, SEQ=100
+2026-06-21 20:20:02,152 - UALink - DEBUG - DL Payload size: 640 bytes. CRC appended.
+2026-06-21 20:20:02,152 - UALink - INFO - STEP 6: Switch Core Routing
+2026-06-21 20:20:02,152 - UALink - INFO - Switch forward req to Acc=2 via Port=3
+2026-06-21 20:20:02,152 - UALink - DEBUG - Switch crossbar active. Route mapping: DST Acc 2 -> egress Port 3
+2026-06-21 20:20:02,152 - UALink - INFO - STEP 7: Completer Data Link Layer Receiving
+2026-06-21 20:20:02,153 - UALink - DEBUG - CRC check on incoming Flit: PASS (Expected: 46456E82)
+2026-06-21 20:20:02,153 - UALink - INFO - STEP 8: Completer Transaction Layer Parsing
+2026-06-21 20:20:02,153 - UALink - DEBUG - Extracted TL Headers: 0102030400000000000000000000000000000000000000000000000000000000
+2026-06-21 20:20:02,153 - UALink - INFO - STEP 9: Completer UPLI Receiving & Processing
+2026-06-21 20:20:02,153 - UALink - DEBUG - Acc=2 read_local addr=0xdeadbeef
+2026-06-21 20:20:02,153 - UALink - DEBUG - Completer Memory lookup executed at Address=0xdeadbeef
+2026-06-21 20:20:02,153 - UALink - INFO - STEP 10: Credit Flow & Return
+2026-06-21 20:20:02,153 - UALink - DEBUG - Credit returned: pool +1 (total: 9)
+2026-06-21 20:20:02,153 - UALink - DEBUG - A2 UPLI returning credit to A1...
+2026-06-21 20:20:02,153 - UALink - DEBUG - Credit returned: pool +1 (total: 8)
+2026-06-21 20:20:02,153 - UALink - INFO - End-to-End trace completed successfully.
+2026-06-21 20:20:02,154 - UALink - INFO - All tests passed successfully.

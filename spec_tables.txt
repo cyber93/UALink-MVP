@@ -1,0 +1,1479 @@
+
+=== TABLE 0 ===
+Rev	Date	Changes
+UALink 200	UALink 200	UALink 200
+0.49	10/23/2024	Initial pre-release of UALink200 specification to test new Word template.
+0.50	10/28/2024	Added initial Fault Management and Telemetry section.
+0.70	12/01/2024	Added TL Chapter details. Various Changes in other sections.
+0.71	12/9/2024	Reworked Credit Return interfaces for UPLI and clarified Credit Return interface for TL. Other small changes in TL section.
+0.90	1/5/2025	Added new Security and Switch Requirements Sections. Added Authentication tag support in UPLI/TL. UALink operation Single-Copy-Atomicity defined. DL Link Level Replay support and other DL changes. Restructured the Manageability Requirements section.
+0.91	1/8/2025	Rebuild of 0.90 to include the TL section after the mis-build in 0.90
+0.92	2/4/2025	Added support in UPLI section for Authorization Tags and UPLI Write Message Requests. Additional detail on Vendor Defined Commands (to be completed in next release). Clarifications on Ordering and Single-Copy-Atomicity of UPLI Requests. | Corrections to TL Flit packing and additional examples in TL section. Manageability/Security chapters content reorganized to remove redundancy and terminology harmonized. Details for handling poisoning of data in security modes. Clarifications in security chapter on various implementation flows and implementation details.
+0.93	2/16/2025	Clarifications on Vendor Defined Command Semantics. Clarification on Ordering Rules (particularly with regard to Vendor Defined Commands). Additional TL Flit packing examples (including Reads and mixtures of Reads and Writes). UPLI and TL Credit Return Interfaces restructured and significantly simplified. ISOLATE Write Response further clarified. Definitions for Pod/Virtual Pod/Switch/Physical Switch. Added Vendor Defined UPLI Write Messages. Suggested backoff modes for TL Control Half-Flit packing.
+1.0RC	2/19/2025	Various corrections to terminology. Corrections to Terminology Table. Clarifications on initial credit release done signals on UPLI interface. Bit lanes and FTYPEs assigned for TL Flit packets. | Minor corrections in security an PHY sections.
+1.0	4/1/2025	Minor bug fixes and modifications for normative language.
+
+=== TABLE 1 ===
+Term	Definition
+UALink	Ultra Accelerator Link
+UPLI	UALink Protocol Level Interface
+DL	Data Link Layer
+DL Channel	Logical channels with in DL, one for TL Flits, one for DL UART messages
+SH	Segment header, used with in a DL Flit
+FH	Flit Header, for DL Flit
+DL alternative sector	Sectors in a DL Flit that are sued for non TL Flits
+DL message	Message that starts and terminates at the DL
+CRC	Cyclic redundancy check
+RS	Reconciliation Layer, interface between PCA and DL
+AM	Alignment marker, used for alignment of PCS lanes
+PCS	Physical Coding Sublayer
+FEC	Forward error correction
+PMA	Physical Medium Attachment Interface
+GAUI	Gigabit unit attachment
+VDCI	Voltage Domain Crossing Interface
+SPA	System Physical Address
+Field	A group of one or more signals that share a name and encode a specific piece of information. Signals within a field are numbered according to binary significance.
+SOC	System on Chip.
+SPC	Symbols Per Clock
+Word	Two Bytes
+Doubleword	Four Bytes
+UART	Universal Anonymous Receiver Transmitter. A DL mechanism for F/W on either end of the link to exchange information.
+Pod	The collection of all the Accelerators and Switches physically connected though UALink via Switches.
+Virtual Pod	A non-overlapping partition of a Pod where the Acclerators within the Virtual Pod may communicate with other Accelerators in the Virtual Pod, but no other Accelerators in the Pod.
+Availability	Security objective ensuring a resource (e.g., network) is functioning and data is accessible when needed
+UALink Network	The physical network of UALink Links and Switches connecting the Accelerators in a Pod.
+CC	Confidential Computing
+Confidentiality	Security objective ensuring data are only readable by an authorized party
+Front end network	Network used by OS domains to communicate and establish a Tenant TCB.
+Infrastructure provider	An organization that maintains computing resources such as servers, storage, networking and virtualization and provides them to the users on demand.
+Integrity	Security objective ensuring data are only writeable and modifiable by an authorized party
+Pod Controller	Central controller software responsible for managing the lifecycle of the Pod including topology | discovery, configuration, resource management, virtual pod creation and management and Pod health monitoring. The Pod Controller is typically owned by the Infrastructure provider.
+Port encryption engine	A port encryption engine has at least one association (key, IV/count/sequence #, etc.) and enough encryption/decryption capability to keep up with line rates. Additionally, based on implementation, the | port encryption engine may have buffering associated with each association such that it can pre-compute counter encryption values. An accelerator requires a port encryption engine per port.
+Switch	An entity that can switch UALink traffic between a set of Ports equal in number to the number of | Accelerators in the Pod.
+Physical Switch	A physical hardware entity that can be used to implement a Switch and which can have Ports equal to he number of Accelerators in the Pod or Ports equal to an integer multiple greater than one of the number of Accelerators in the Pod.
+TCB	Trusted Computing Base – The set of hardware and software components that are trusted to meet the security objectives of a feature.
+TEE	Trusted Execution Environment. It is responsible for bringing an accelerator into the TCB and for UALsec configuration (e.g., key establishment). In the context of CC, TEE examples include Intel TDX, AMD SEV and ARM CCA).
+Tenant	User of the infrastructure computing resources such as AI Cluster. In an AI cluster, the Tenant is | typically assigned a set of accelerators (i.e., a Virtual Pod) to run its workload.
+TVM	Trusted Execution Environment Virtual Machine. This is a confidential computing VM running in a TEE. One or more accelerators are assigned to a TVM which is responsible for secure configuration and management of those accelerators.
+Virtual Pod	The logical subset of a physical pod connected over UAL. A virtual pod belongs to one user (aka Tenant). A physical pod can be partitioned into multiple, concurrent virtual pods, each presumably owned by
+
+=== TABLE 2 ===
+	distinct Tenants. One virtual pod can be created and torn down without impacting other running virtual pods in the physical pod
+TSM	TEE Security Manager. This is SW/FW component on the host which establishes secure interface with the device and is responsible for configuring and helping enfoce TEE IO security policies on the host | side. It is in the TCB of all TVMs
+DSM	Device Security Manager. This is a FW component on the device that enforces device security policies. It communicates with the TSM over a secure channel and receives commands from TSM for configuring | and enforcing device security policies.
+System Node	Hardware platform that hosts Accelerators, alongside one or more Central Processing Unit(s) (CPU(s)) and one or more network interface(s). The System Node is the boundary of an OS Domain, and UALink System Nodes host a Node Management Agent.
+Switch Platform	Hardware platform that hosts Switches, a Switch Management Agent, and a network interface. When present, Switch Platforms are distinct from System Nodes.
+Node Management | Agent	Firmware/Software component that manages Accelerators in a System Node under the direction of the | Pod Controller.
+Switch Management Agent	Firmware/Software component that manages Switches under the direction of the Pod Controller.
+
+=== TABLE 3 ===
+Name	Size	Description
+UPLIClk	1	Interface clock, sourced from the SOC pervasive logic. UALink Protocol Level Interface signals are synchronous to this clock as well as the UPLIReset_N, | *ClkReq, and *ClkAck signals.
+UPLIReset_N	1	Interface reset signal, active LOW and is asserted and de-asserted and asserted synchronously to UPLIClk.
+
+=== TABLE 4 ===
+Name	Size (bits)	Driver	Description
+Request Channel Information and Control Signals | These signals are Time Division Multiplexed (TDMed) according to ReqPortID value.	Request Channel Information and Control Signals | These signals are Time Division Multiplexed (TDMed) according to ReqPortID value.	Request Channel Information and Control Signals | These signals are Time Division Multiplexed (TDMed) according to ReqPortID value.	Request Channel Information and Control Signals | These signals are Time Division Multiplexed (TDMed) according to ReqPortID value.
+ReqVld	1	Originator	Request valid. This signal indicates that the Originator is presenting valid information (a Beat) on this channel.
+ReqPortID	2	Originator	Request Port ID. Where the Originator drives the Request Channel to a TL, indicates the Port associated with that TL that the Request Channel Beat is to be presented on. For all Originators, ReqPortID indicates the TDM cycle for | the Request Channel.
+ReqASI	2	Originator	Request Address Space Identifier. For any Request that is not a UPLI Write Message Request or Vendor Defined Command, identifies the address space. For a UPLI Write Message Request, this field is either Reserved or specifies a specific function for the type of the UPLI Write Message Request (the type of UPLI Write Message is specified in the ReqMetaData field) and for a Vendor | Defined Command this signal is vendor defined.
+ReqAuthTag	64	Originator	Request Authorization Tag. Authorization Tag for the Request. See the Chapter on Security for more details about this signal and Authorization. When Authorization is not active for the Request or ReqVld is de-asserted, | this field shall be driven to zero.
+ReqSrcPhysAccID	10	Originator	Request Source Physical Accelerator ID. Physical Accelerator ID for the Source Accelerator of the Request (i.e. the Accelerator with the Initial UPLI Originator that initiated the Request).
+ReqDstPhysAccID	10	Originator	Request Destination Physical Accelerator ID.. Physical Accelerator ID for the | Destination Accelerator of the Request (i.e. the Accelerator with the Final UPLI Completer that will satisfy the Request)
+ReqTag	11	Originator	Request Tag. This field is the Transaction Tag used to uniquely identify each outstanding Request (tag shared across all command types) from the Source Accelerator UALink Port within the Station that issued the Request.
+ReqNumBeats	2	Originator	Request Number of Data Beats. Indicates the number of Data Beats | transferred on the OrigData Channel for this Request for a Write, Vendor Defined Write class Command, Atomic, Vendor Defined Atomic class Command or UPLI Write Message. The number of Data Beats transferred is (ReqNumBeats+1). This field is intended to relieve Switches of the need to compute the number of Beats transferred on the OrigData Channel for the Request from other fields in the interface. Switches shall rely on this field to determine the number of Beats for Requests transferred on the OrigData Channel. | This field shall only valid for Requests with ReqCmd[5] = 1 (Atomics, Writes, Vendor Defined Write class Commands, UPLI Write Message Requests, and Vendor Defined UPLI Write Message Requests). For Requests with ReqCmd[5] = 0 that are not Read class Vendor Defined Commands (Reads), this field shall be driven to 0. For Requests that are Read class Vendor Defined Commands, this signal shall be valid and may be, but is not required to be, used to compute the number of Data Beats returned on the Read | Response.
+ReqAddr	57	Originator	Request Address. For any Request that is not a UPLI Write Message Request, Vendor Defined Command, or Vendor Defined UPLI Write Message, this field shall specify the Request address. For a UPLI Write Message Request, this field is either Reserved or specifies control information for the UPLI Write Message (the type of the UPLI Write Message shall be specified in the ReqMetadata field). Unless the type of UPLI Write Message defines this field as carrying an address, this field does not specify an address for the UPLI Write Message. UPLI Write Message data is issued as one, two, three, or four | 64-byte beats of data without regard to the value in the ReqAddress field. For a Vendor Defined Command, this signal is vendor defined. For Vendor
+
+=== TABLE 5 ===
+Name	Size (bits)	Driver	Description
+			Defined Commands, Vendor Defined UPLI Write Messages, this field is Vendor Defined.
+ReqCmd	6	Originator	Request command. This field indicates the Command for this Request and is | detailed below.
+ReqLen	6	Originator	Request Length. For any Request that is not a UPLI Write Message, Vendor Defined UPLI Write Message or Vendor Defined Command, this field indicates number of doublewords of data to be transferred by the transaction Request. The requested transfer size is (ReqLen + 1) doublewords. For a WriteFull Request , this field shall indicate a transfer of either 64, 128, 192, or 256 bytes corresponding to one, two, three or four 64-byte data beats. For a UPLI Write Message Request, this field is either Reserved or specifies a specific function for the type of the UPLI Write Message Request (the type of UPLI Write Message is specified in the ReadMetaData field). For a Vendor Defined Command or Vendor Defined UPLI Write Message Request, this signal is | vendor defined.
+ReqAttr	8	Originator	Request Attributes. For any Request that is not a UPLI Write Message, a Vendor Defined UPLI Write Message, or a Vendor Defined Command, this field shall specify extended transaction attributes to be used at the Destination Accelerator. The encoding of this field depends on the Request and is detailed below. For a UPLI Write Message Request, this field is either Reserved or specifies a specific function for the type of the UPLI Write Request (the type of the UPLI Write Message is defined by the ReqMetadata field). For a Vendor Defined Command or Vendor Defined UPLI Write | Message, this field is vendor defined.
+ReqMetaData	8	Originator	For any Request that is not a UPLI Write Message Request, Vendor Defined UPLI Write Message Request or a Vendor Defined Command, this field shall be an implementation defined control information field conveyed to the Final Completer with the Request. For a UPLI Write Message or Vendor Defined UPLI Write Message, this field specifies the type of the UPLI Write Message as described below. For a Vendor Defined Command, this field is Vendor | Defined.
+ReqVC	2	Originator	Request Virtual Channel. Specifies the Virtual Channel of the Request. In UALink 1.0, this field is informational only to the Switch with the exception that this value is returned to the Originator in the Credit Return signals. The | Switch has one virtual channel and passes this field through to the Destination Accelerator unchanged.
+ReqPool	1	Originator	Request Pool. Specifies whether the Request was issued using a Pool Credit (ReqPool = 1) or a Virtual Channel Credit (ReqPool = 0).
+Request Channel Credit Return signals | These signals are not Time Division Multiplexed (TDMed). A Credit or Credits for any port may be returned on any cycle.	Request Channel Credit Return signals | These signals are not Time Division Multiplexed (TDMed). A Credit or Credits for any port may be returned on any cycle.	Request Channel Credit Return signals | These signals are not Time Division Multiplexed (TDMed). A Credit or Credits for any port may be returned on any cycle.	Request Channel Credit Return signals | These signals are not Time Division Multiplexed (TDMed). A Credit or Credits for any port may be returned on any cycle.
+ReqCreditInitDone	4	Completer	Request Credit Initialization Done. When Asserted, indicates to Originator that the initial Credit release for the Port associated with the individual signal is complete (ReqCreditInitDone[2] indicates Port 2 is complete). The | individual “done” signals can be asserted independently and once asserted remain asserted until the interface is reset or powered off.
+ReqCreditVld	4	Completer	Request Credit Valid. Indicates a Credit or Credits is being released to the Originator. Credits are per port and a Station may have 1, 2 or 4 ports. | ReqCreditVld[n] corresponds to Port[n]. Credits can be released on more than one port simultaneously.
+ReqCreditPool	4	Completer	Request Credit Pool. Indicates the type of Credit indicated on ReqPool for the Request that consumed the Pool or Virtual Channel Credit or Credits being released. If ‘0’, the Credit or Credits being released is a Virtual Channel Credit and if ‘1’, the Credit or Credits released is a Pool Credit. The ReqVC value for the Request corresponding to the returned Credit or Credits is placed on the appropriate ReqCreditPort[0,1,2,3]VC signal.
+ReqCreditPort0VC	2	Completer	Request Credit Port 0 Virtual Channel. Indicates the Virtual Channel indicated on ReqVC for the Request that consumed the Pool or Virtual Channel Credit | or Credits being released for Port0. Valid when ReqCreditVld[0] is asserted.
+ReqCreditPort1VC	2	Completer	Request Credit Port 1 Virtual Channel. Indicates the Virtual Channel indicated on ReqVC for the Request that consumed the Pool or Virtual Channel Credit or Credits being released for Port1. Valid when ReqCreditVld[1] is asserted.
+ReqCreditPort2VC	2	Completer	Request Credit Port 2 Virtual Channel. Indicates the Virtual Channel indicated on ReqVC for the Request that consumed the Pool or Virtual Channel Credit or Credits being released for Port2. Valid when ReqCreditVld[2] is asserted.
+
+=== TABLE 6 ===
+Name	Size (bits)	Driver	Description
+ReqCreditPort3VC	2	Completer	Request Credit Port 3 Virtual Channel. Indicates the Virtual Channel indicated on ReqVC for the Request that consumed the Pool or Virtual Channel Credit or Credits being released for Port3. Valid when ReqCreditVld[3] is asserted.
+ReqCreditPort0Num	2	Completer	Request Credit Port 0 Number of Credits. Indicates the number of Credits being returned for Port0 (up to 4, ReqCreditPort0Num+1). Only valid when | ReqCreditVld[0] is asserted.
+ReqCreditPort1Num	2	Completer	Request Credit Port 1 Number of Credits. Indicates the number of Credits being returned for Port0 (up to 4, ReqCreditPort1Num+1). Only valid when ReqCreditVld[1] is asserted.
+ReqCreditPort2Num	2	Completer	Request Credit Port 2 Number of Credits. Indicates the number of Credits being returned for Port0 (up to 4, ReqCreditPort2Num+1). Only valid when ReqCreditVld[2] is asserted.
+ReqCreditPort3Num	2	Completer	Request Credit Port 3 Number of Credits. Indicates the number of Credits being returned for Port0 (up to 4, ReqCreditPort3Num+1). Only valid when | ReqCreditVld[3] is asserted.
+Request Channel Parity Signals	Request Channel Parity Signals	Request Channel Parity Signals	Request Channel Parity Signals
+ReqVldParity	1	Originator	Request Valid Parity. Even parity across ReqVld. Checked every cycle.
+ReqAddrParity	1	Originator	Request Address Parity. Even Parity across ReqAddr. Checked only when | ReqVld is asserted.
+ReqParity	1	Originator	Request Parity. ReqParity provides even parity over ReqTag, ReqLen, ReqAttr, ReqCmd, ReqMetaData, ReqVC, ReqSrcPhysAccID, | ReqDstPhysAccID, ReqPortID, ReqNumBeats. Checked only when ReqVld is asserted.
+ReqCreditVldParity	1	Completer	Request Credit Valid Parity. Even parity across ReqCreditVld. Checked every cycle.
+ReqCreditParity	1	Completer	Request Credit Parity. Even parity across ReqCreditPort0VC, ReqCreditPort1VC, ReqCreditPort2VC, ReqCreditPort3VC, ReqCreditPort0Num, ReqCreditPort1Num, ReqCreditPort2Num, ReqCreditPort3Num, and ReqCreditPool. Checked in beats where | ReqCreditVld is non-zero.
+
+=== TABLE 7 ===
+Bit Range	Sub-field
+ReqAttr[7:4]	Byte enables, last DW. Ignored if the last DW is also the first DW.
+ReqAttr[3:0]	Byte enables, first DW
+
+=== TABLE 8 ===
+Bit Range	Sub-field
+ReqAttr[7:4]	Operation Type (OpType[3:0]).
+ReqAttr[3:2]	Operand Size (OpSize).
+ReqAttr[1]	Reserved
+ReqAttr[0]	Operation Type (OpType[4]).
+
+=== TABLE 9 ===
+OpSize	Operand Size
+00b	32 bits
+01b	64 bits
+10b	16-bits
+11b	8-bits
+
+=== TABLE 10 ===
+UPLI Command	ReqCmd	Data Channels	Resp Chan	Description
+Reserved	00 0000b/00h | - | 00-0010b/02h			
+Read	00 0011b/03h	Rd Rsp/Data (read data)	Read	Read. I/O Coherent read, up to 256 bytes (4 beats).
+Reserved	00 0100b/04h | - | 00 0111b/07h			
+Reserved for Vendor Defined Commands	00 1000b/08h | - | 00 1111b/0Fh			Command encodings reserved for Read class Vendor Defined Commands.
+Reserved	01 0000b/10h | - | 10-0111b/27h			
+Write	10 1000b/28h	Orig Data (write data)	Write	Write. I/O Coherent write, up to 256 bytes (4 beats).
+WriteFull	10 1001b/29h	Orig Data (write data)	Write	WriteFull. I/O Coherent store of one or more full (i.e. all Byte Enables for all Beats are asserted) Data Beats.
+UPLI Write Message	10 1010b/2Ah	Orig Data (write data)	Read or Write	UPLI Write Message, issues a UPLI message from the Source Accelerator Originator to the Destination Accelerator Completer. The type of the UPLI message is encoded in the ReqMetaData field. Depending on the type of UPLI message, the | Response is returned on the Read or Write Response Channel.
+Reserved	10 1011b/2Bh | - | 10-1011b/2Bh			
+Reserved for Vendor Defined Commands	10-1100b/2Ch | - | 10-1111b/2Fh			Command encodings reserved for Write class Vendor Defined Commands.
+AtomicR	11 0000b/30h	Rd Rsp/Data (returned read data) | OrigData | (atomic operands)	Read	Atomic Return Data. I/O Coherent atomic read-modify-write with data returned.
+Reserved	11-0001b/31h			
+AtomicNR	11 0010b/32h	OrigData | (atomic operands)	Write	Atomic No-Return Data. I/O Coherent atomic read-modify-write with no data returned.
+Reserved	11-0011b/33h | - | 11-0110b/3Bh			
+Reserved for Vendor Defined Commands.	11-1100b/3Ch | - | 11-1111b/3Fh			Command encodings reserved for Atomic classVendor Defined Commands.
+
+=== TABLE 11 ===
+ReqMetaData value	Type	ReqAddr	ReqASI	ReqAttr	# Write Beats/ Content	Response Channel/ # Beats if Read
+0x00	NOP	Reserved	Reserved	Reserved	1 / Null (all zeros)	Write
+0x01	KeyRollMsg.ReqChannel	Reserved	Reserved	Reserved	1 / Null | (all zeros)	Write
+0x02	KeyRollMsg.RdRspChannel	Reserved	Reserved	Reserved	1 / Null (all zeros)	Read
+0x03	KeyRollMsg.WrRspChannel	Reserved	Reserved	Reserved	1 / Null (all zeros)	Write
+0x04-0xEF	Reserved					
+0xF0- | 0xFF	Vendor Defined UPLI Write Messages	Vendor Defined	Vendor Defined	Vendor Defined	Vendor Defined	Vendor Defined
+
+=== TABLE 12 ===
+Name	Size	Driver	Description
+Read Response and Data Channel Information and Control signals | These signals are Time Division Multiplexed (TDMed) according the RdRspPortID value.	Read Response and Data Channel Information and Control signals | These signals are Time Division Multiplexed (TDMed) according the RdRspPortID value.	Read Response and Data Channel Information and Control signals | These signals are Time Division Multiplexed (TDMed) according the RdRspPortID value.	Read Response and Data Channel Information and Control signals | These signals are Time Division Multiplexed (TDMed) according the RdRspPortID value.
+RdRspVld	1	Completer	Read Response Valid. This signal indicates that the Completer is presenting valid information (a Data Beat) on this Channel.
+RdRspPortID	2	Completer	Read Response/Data Port ID. Where the Completer drives the Read Response/Data Channel to a TL, indicates the Port associated with that TL that | the Read Response/Data Channel Beat is to be presented on. For all Completers, RdRspPortID indicates the TDM cycle for the Read Response/Data Channel.
+RdRspAuthTag	64	Completer	Read Response Authorization Tag. Authorization Tag for the Read Response. See the Chapter on Security for more details about this signal and Authorization. | When Authorization is not active for the Response or RdRspVld is de-asserted, this field shall be driven to zero.
+RdRspSrcPhysAccID	10	Completer	Read Response Source Physical Accelerator ID. The source Accelerator ID of the Read Response. This field should contain the value of ReqDstPhysAccID for the Request that caused this Read Response (the Destination Accelerator of the original Request is the source Accelerator of the Read Response). This information is not required for functionality but is useful for debug (the Read | Response is routed using the RdRspDstPhysAccID field). Carrying a correct value in this field is optional (i.e. UALink TL or UALink DL may compress this field out). When the field does not contain an accurate value, the field should be | driven to zero. Because this field may be inaccurate, it may not be used for a functional purpose.
+RdRspDstPhysAccID	10	Completer	Read Response Destination Physical Accelerator ID. The Destination Accelerator ID of the Read Response. This field shall contain the value of ReqSrcPhysAccID for the Request that caused this Read Response (the Source Accelerator of the original Request is the Destination Accelerator of the Read Response). This field is used to route the Read Response back to the Accelerator that originally | sourced the Request.
+RdRspTag	11	Completer	Read Response Transaction Tag. This field contains the value of ReqTag field from the initial Request.
+RdRspNumBeats	2	Completer	Read Response Number of Data Beats. Indicates the number of Beats for this Read Response. The number of beats transferred is (RdRspNumBeats+1). This signal is intended to allow Switches to gather multiple Beats together more easily into a larger entity for routing and relieve Switches of the need to compute the number of Beats being transferred. | Switches shall rely on this field to determine the number of beats being transferred for Read Responses.
+RdRspData	512	Completer	Read Response Data. If the Read was successful, this field carries the requested data. The transfer of the requested data may require more than one Data Beat.
+RdRspStatus	4	Completer	Read Response status. This field indicates the status of the Read Request. | RdRspStatus is required to be the same across all beats of a Response.
+RdRspOffset	2	Completer	Read Response Offset. Indicates the index of the current Data Beat. Data to be returned to the Originator is transferred from the Completer in the RdRspData field in one or more Data Beats. Each Beat is sequentially assigned a number starting at 0 and ending with n-1, based on the order of the data in memory; n is the total number of Beats required to transfer the data to be returned. When the transfer requires more than one Beat and the transfer is in Multi-Beat Mode, the Completer must begin with RdRspOffset 0 and continue in Beat order. In single-beat mode, the Beats may come in any order. This field provides the number of | the Beat being presented on this transfer cycle.
+
+=== TABLE 13 ===
+Name	Size	Driver	Description
+RdRspLast	1	Completer	Read Response Last. This signal is asserted with the last Response Data Beat of a | data transfer.
+RdRspDataError	1	Completer	Read Response Data Error. This field is sent with the same timing as RdRspData and indicates the status (error – or “poisoned” – or not) of the Beat.. This field | shall be ignored when RdRspVld is not asserted. This field may have differing values in the different beats unlike RdRspStatus and this field shall not be used to indicate errors other than parity issues with Data or Byte Enable fields. As one example, Data Response Beats with a RdRspStatus of DECODE_ERROR | should provide beats of a fixed data pattern – say all 0xF’s – and have RdRspDataError = 0 for these Beats unless a parity error occurred during | transmission. The DECODE ERROR is indicated solely by the RdRspStatus field.
+RdRspVC	2	Completer	Read Response Virtual Channel. Specifies the Virtual Channel of the read Response. Matches the Virtual Channel of the originating Request (ReqVC). In UALink 1.0, this field is informational only to the Switch with the exception that this value is returned to the Sender in the Credit Return signals. The Switch has one virtual channel and passes this field through to the source Accelerator | unchanged.
+RdRspPool	1	Completer	Read Response Pool. Specifies whether the Read Response was issued using a Pool Credit (RdRspPool = 1) or a Virtual Channel Credit (RdRspPool = 0).
+Read Response and Data Channel Credit Return signals | These signals are not Time Division Multiplexed (TDMed). A Credit or Credits for any port may be returned on any cycle.	Read Response and Data Channel Credit Return signals | These signals are not Time Division Multiplexed (TDMed). A Credit or Credits for any port may be returned on any cycle.	Read Response and Data Channel Credit Return signals | These signals are not Time Division Multiplexed (TDMed). A Credit or Credits for any port may be returned on any cycle.	Read Response and Data Channel Credit Return signals | These signals are not Time Division Multiplexed (TDMed). A Credit or Credits for any port may be returned on any cycle.
+RdRspCreditInitDone	4	Originator	Read Response Credit Initialization Done. When Asserted, indicates to Completer that the initial Credit release for the port associated with the individual signal is complete (RdRspCreditInitDone[2] indicates port 2 is | complete). The individual “done” signals can be asserted independently and once asserted remain asserted until the interface is reset or powered off.
+RdRspCreditVld	4	Originator	Read Response Credit Valid. Indicates a Credit or Credits is being released to the Completer. Credits are per port and a Station may have 1, 2 or 4 ports. | RdRspCreditVld[n] corresponds to Port[n]. Credits can be released on more than one port simultaneously.
+RdRspCreditPool	4	Originator	Read Response Credit Pool. Indicates the type of Credit indicated on RdRspPool for the Read Response that consumed the Pool or Virtual Channel Credit or Credits being released. If ‘0’, the Credit or Credits being released is a Virtual Channel Credit and if ‘1’, the Credit or Credits released is a Pool Credit. The RdRspVC value for the Write Response corresponding to the returned Credit or Credits is placed on the appropriate RdRspCreditPort[0,1,2,3]VC signal.
+RdRspCreditPort0VC	2	Originator	Read Response Credit Port 0 Virtual Channel. Indicates the Virtual Channel | indicated on RdRspVC for the Read Response that consumed the Pool or Virtual Channel Credit or Credits being released for Port0. Valid when | RdRspCreditVld[0] is asserted.
+RdRspCreditPort1VC	2	Originator	Read Response Credit Port 1 Virtual Channel. Indicates the Virtual Channel | indicated on RdRspVC for the Read Response that consumed the Pool or Virtual Channel Credit or Credits being released for Port1. Valid when | RdRspCreditVld[1] is asserted.
+RdRspCreditPort2VC	2	Originator	Read Response Credit Port 2 Virtual Channel. Indicates the Virtual Channel | indicated on RdRspVC for the Read Response that consumed the Pool or Virtual Channel Credit or Credits being released for Port2. Valid when | RdRspCreditVld[2] is asserted.
+RdRspCreditPort3VC	2	Originator	Read Response Credit Port 3 Virtual Channel. Indicates the Virtual Channel | indicated on RdRspVC for the Read Response that consumed the Pool or Virtual Channel Credit or Credits being released for Port3. Valid when | RdRspCreditVld[3] is asserted.
+RdRspCreditPort0Num	2	Originator	Read Response Credit Port 0 Number of Credits. Indicates the number of Credits being returned for Port0 (up to 4, RdRspCreditPort0Num+1). Only valid when RdRspCreditVld[0] is asserted.
+RdRspCreditPort1Num	2	Originator	Read Response Credit Port 1 Number of Credits. Indicates the number of Credits | being returned for Port1 (up to 4, RdRspCreditPort1Num+1). Only valid when RdRspCreditVld[1] is asserted.
+RdRspCreditPort2Num	2	Originator	Read Response Credit Port 2 Number of Credits. Indicates the number of Credits being returned for Port2 (up to 4, RdRspCreditPort2Num+1). Only valid when RdRspCreditVld[2] is asserted.
+RdRspCreditPort3Num	2	Originator	Read Response Credit Port 3 Number of Credits. Indicates the number of Credits being returned for Port3 (up to 4, RdRspCreditPort3Num+1). Only valid when RdRspCreditVld[3] is asserted.
+Read Response and Data Channel Parity signals	Read Response and Data Channel Parity signals	Read Response and Data Channel Parity signals	Read Response and Data Channel Parity signals
+RdRspVldParity	1	Completer	Read Response Valid Parity. Even parity across RdRspVld. Checked every cycle.
+
+=== TABLE 14 ===
+Name	Size	Driver	Description
+RdRspDataParity	8	Completer	Read Response Data Parity. Each bit in RdRspDataParity provides even parity based error protection for 64 bits of the RdRspData field. The number of set bits in RdRspDataParity[i] and RdRspData[((i+1)*64-1):(i*64)] is always even. Even parity must be provided by the completer, including cases when read data was masked due to the length or the address of the command, and beats where RdRspDataError is asserted. Checked only when RdRspVld is asserted. |  | This field is sent with the same timing as RdRspData.
+RdRspParity	1	Completer	Read Response Parity. RdRspParity provides even parity over RdRspTag, RdRspStatus, RdRspOffset, RdRspLast, RdRspNumBeats, RdRspVC, RdRspSrcPhysAccID, RdRspDstPhysAccID, RdRspPortID, RdRspDataError. Checked only when RdRspVld is asserted.
+RdRspCreditVldParity	1	Originator	Read Response Credit Valid Pairty. Even parity across RdRspCreditVld. Checked | every cycle.
+RdRspCreditParity	1	Originator	Read Response Credit Parity. Even parity across RdRspCreditPort0VC, RdRspCreditPort1VC, RdRspCreditPort2VC, RdRspCreditPort3VC, | RdRspCreditPort0Num, RdRspCreditPort1Num, RdRspCreditPort2Num, RdRspCreditPort3Num, and RdRspCreditPool. Checked in beats where RdRspCreditVld is non-zero.
+
+=== TABLE 15 ===
+RdRspStatus[3:0]	Response	Comment
+0000b	OKAY (Normal completion)	The transaction completed normally.
+0001b	Reserved	
+0010b	TARGET ABORT	Indicates that the end-target of the transaction had an error while handling the transaction or is otherwise unable to complete the transaction.
+0011b	DECODE ERROR	Address Decode Error
+0100b-0101b	Reserved	
+0110b	PROTECTION VIOLATION	Protection violation. Indicates that certain security or protection checks caused the transaction to be aborted. This error is normally persistent.
+0111b	Reserved	
+1000b	CMPTO (Completion Timeout)	The Completer in the destination Accelerator was unable to complete the Request and timed out.
+1001b-1111b	Reserved	
+
+=== TABLE 16 ===
+RdRspStatus[3:0]	Response	Comment
+0000b	OKAY (Normal completion)	The transaction completed normally.
+0001b-1111b	Vendor Defined	
+
+=== TABLE 17 ===
+Name	Size (bits)	Driver	Description
+Write Response Channel Information and Control signals | These signals are Time Division Multiplexed (TDMed) according the WrRspPortID value.	Write Response Channel Information and Control signals | These signals are Time Division Multiplexed (TDMed) according the WrRspPortID value.	Write Response Channel Information and Control signals | These signals are Time Division Multiplexed (TDMed) according the WrRspPortID value.	Write Response Channel Information and Control signals | These signals are Time Division Multiplexed (TDMed) according the WrRspPortID value.
+WrRspVld	1	Completer	Write Response Valid. This signal indicates that the Completer is presenting valid information (a Beat) on this channel.
+WrRspPortID	2	Completer	Write Response Port ID. Where the Completer drives the Write Response Channel to a TL, indicates the Port associated with that TL that the Write Response Channel Beat is to be presented on. For all Completers, WrRspPortID indicates the TDM cycle for the Write Response Channel.
+WrRspAuthTag	64	Completer	Write Response Authorization Tag. If the WrRspStatus indicates a value other than ISOLATE, this field shall contain the Authorization Tag for the Write Response. See the Chapter on Security for more details about this signal and Authorization. When Authorization is not active for the Response or WrRspVld is de-asserted, this field is driven to zero. If the WrRspStatus field indicates ISOLATE, this field is a don’t care and shall be ignored by the Completer and no | Authentication failure shall be generated.
+WrRspSrcPhysAccID	10	Completer	Write Response Source Physical Accelerator ID. The source Accelerator ID of the Write Response. If the WrRspStatus indicates a value other than ISOLATE, this field shall contain the value of ReqDstPhysAccID for the Request that caused this Write Response (the destination Accelerator of the original Request is the Source Accelerator of the Write Response). This information is not required for functionality but is useful for debug (the Write Response is routed using the WrRspDstPhysAccID). Carrying a correct value in this field is optional (i.e. UALink TL or UALink DL may compress this field out). When the field does not contain an accurate value, the field should be driven to zero. Because this field may be inaccurate, it may not be | used for a functional purpose. If the WrRspStatus field indicates ISOLATE, this field is a don’t care and shall be ignored by the Completer.
+WrRspDstPhysAccID	10	Completer	Write Response Destination Physical Accelerator ID. The destination Accelerator ID of the Write Response. If the WrRspStatus indicates a value other than ISOLATE, this field shall contain the value of ReqSrcPhysAccID for the Request that caused this Write Response (the Source Accelerator of the original Request is the destination Accelerator of the Write Response). This field is used to route the Write Response back to the Accelerator that originally sourced the Request. If the WrRspStatus field indicates ISOLATE, this field is a | don’t care and shall be ignored by the Completer.
+WrRspTag	11	Completer	Write Response Transaction Tag. If the WrRspStatus indicates a value other than ISOLATE, this field shall contain the value of the ReqTag field from the Request that caused this Write Response. If the WrRspStatus field indicates ISOLATE, this field is a don’t care and | shall be ignored by the Completer.
+WrRspStatus	4	Completer	Write Response status. This field shall indicate the status of the Write Request.
+WrRspVC	2	Completer	Write Response Virtual Channel. If the WrRspStatus indicates a value other than ISOLATE, this field shall specify the virtual channel of the Write Response. This signal shall matche the virtual channel of the originating Request (ReqVC). In UALink 1.0, this field is informational only to the Switch with the exception that this value is returned to | the Sender in the Credit Return signals. The Switch has one virtual channel and passes this field through to the source Accelerator
+
+=== TABLE 18 ===
+Name	Size (bits)	Driver	Description
+			unchanged. If the WrRspStatus field indicates ISOLATE, this field | shall indicate the Virtual Channel Credit used to issue the command if WrRspPool=0.
+WrRspPool	1	Completer	Write Response Pool. Specifies whether the Write Response was issued using a Pool Credit (WrRspPool = 1) or a Virtual Channel | Credit (WrRspPool = 0).
+Write Response Channel Credit Return signals | These signals are not Time Division Multiplexed (TDMed). A Credit or Credits for any port may be returned on any cycle.	Write Response Channel Credit Return signals | These signals are not Time Division Multiplexed (TDMed). A Credit or Credits for any port may be returned on any cycle.	Write Response Channel Credit Return signals | These signals are not Time Division Multiplexed (TDMed). A Credit or Credits for any port may be returned on any cycle.	Write Response Channel Credit Return signals | These signals are not Time Division Multiplexed (TDMed). A Credit or Credits for any port may be returned on any cycle.
+WrRspCreditInitDone	4	Originator	Write Response Credit Initialization Done. When Asserted, indicates to Completer that the initial Credit release for the port associated | with the individual signal is complete (WrRspCreditInitDone[2] indicates port 2 is complete). The individual “done” signals can be | asserted independently and once asserted remain asserted until the interface is reset or powered off.
+WrRspCreditVld	4	Originator	Write Response Credit Valid. Indicates a Credit or Credits is being released to the Completer. Credits are per port and a Station may | have 1, 2 or 4 ports. WrRspCreditVld[n] corresponds to Port[n]. Credits can be released on more than one port simultaneously.
+WrRspCreditPool	4	Originator	Write Response Credit Pool. Indicates the type of Credit indicated on WrRspPool for the Write Response that consumed the Pool or Virtual Channel Credit or Credits being released. If ‘0’, the Credit or Credits being released is a Virtual Channel Credit and if ‘1’, the Credit or Credits released is a Pool Credit. The WrRspVC value for the Write Response corresponding to the returned Credit or Credits is placed on the appropriate WrRspCreditPort[0,1,2,3]VC signal.
+WrRspCreditPort0VC	2	Originator	Write Response Credit Port 0 Virtual Channel. Indicates the Virtual Channel indicated on WrRspVC for the Write Response that consumed the Pool or Virtual Channel Credit or Credits being | released for Port0. Valid when RdRspCreditVld[0] is asserted.
+WrRspCreditPort1VC	2	Originator	Write Response Credit Port 1 Virtual Channel. Indicates the Virtual Channel indicated on WrRspVC for the Write Response that consumed the Pool or Virtual Channel Credit or Credits being | released for Port1. Valid when WrRspCreditVld[1] is asserted.
+WrRspCreditPort2VC	2	Originator	Write Response Credit Port 2 Virtual Channel. Indicates the Virtual Channel indicated on WrRspVC for the Write Response that consumed the Pool or Virtual Channel Credit or Credits being | released for Port2. Valid when WrRspCreditVld[2] is asserted.
+WrRspCreditPort3VC	2	Originator	Write Response Credit Port 3 Virtual Channel. Indicates the Virtual Channel indicated on WrRspVC for the Write Response that consumed the Pool or Virtual Channel Credit or Credits being | released for Port3. Valid when WrRspCreditVld[3] is asserted.
+WrRspCreditPort0Num	2	Originator	Write Response Credit Port 0 Number of Credits. Indicates the number of Credits being returned for Port0 (up to 4, | WrRspCreditPort0Num+1). Only valid when WrRspCreditVld[0] is asserted.
+WrRspCreditPort1Num	2	Originator	Write Response Credit Port 1 Number of Credits. Indicates the number of Credits being returned for Port1 (up to 4, | WrRspCreditPort1Num+1). Only valid when WrRspCreditVld[1] is asserted.
+WrRspCreditPort2Num	2	Originator	Write Response Credit Port 2 Number of Credits. Indicates the number of Credits being returned for Port2 (up to 4, | WrRspCreditPort2Num+1). Only valid when WrRspCreditVld[2] is asserted.
+WrRspCreditPort3Num	2	Originator	Write Response Credit Port 3 Number of Credits. Indicates the number of credits being returned for Port3 (up to 4, | WrRspCreditPort3Num+1). Only valid when WrRspCreditVld[3] is asserted.
+Write Response Channel Parity signals	Write Response Channel Parity signals	Write Response Channel Parity signals	Write Response Channel Parity signals
+WrRspVldParity	1	Completer	Write Response Valid Parity. Even parity across WrRspVld. Checked | every cycle.
+WrRspParity	1	Completer	Write Response Parity. WrRspParity provides even parity over WrRspTag, WrRspStatus, WrRspSrcPhysAccID, WrRspDstPhysAccID, WrRspPortID, WrRspVC. Checked only when WrRspVld is asserted.
+WrRspCreditVldParity	1	Originator	Write Response Credit Valid Parity. Even parity across WrRspCreditVld. Checked every cycle.4
+
+=== TABLE 19 ===
+Name	Size (bits)	Driver	Description
+WrRspCreditParity	1	Originator	Write Response Credit Parity. Even parity across | WrRspCreditPort0VC, WrRspCreditPort1VC, WrRspCreditPort2VC, WrRspCreditPort3VC, WrRspCreditPort0Num, | WrRspCreditPort1Num, WrRspCreditPort2Num, | WrRspCreditPort3Num, and WrRspCreditPool. Checked in beats where WrRspCreditVld is non-zero.
+
+=== TABLE 20 ===
+WrRspStatus[3:0]	Response	Comment
+0000b	OKAY (Normal Completion)	The transaction completed normally
+0001b	Reserved	
+0010b	TARGET ABORT	Indicates that the end-target of the transaction had an error while handling the transaction or is otherwise unable to complete the transaction.
+0011b	DECODE ERROR	Address Decode Error
+0100b-0101b	Reserved	
+0110b	PROTECTION VIOLATION	Protection Violation. Indicates that certain security or protection checks caused the transaction to be aborted. This | error is normally persistent.
+0111b	Reserved	
+1000b	CMPTO (Completion Timeout)	The Completer in the destination Accelerator was unable to complete the Request and timed out.
+1001b-1110b	Reserved	
+1111b	ISOLATE	Write Response from UALink TL to an Accelerator UPLI Originator to place the UPLI Originator into Isolation Mode. Valid only for UALink TL to UPLI Completer Write Response | channel on an Accelerator.
+
+=== TABLE 21 ===
+WrRspStatus[3:0]	Response	Comment
+0000b	OKAY (Normal Completion)	The transaction completed normally
+0001b-1110b	Vendor Defined	
+1111b	RESERVED	A Vendor defined Command shall not use this WrRspStatus encoding. This encoding is used for ISOLATE responses only | which is not a legal status response for a Vendor Defined Command.
+
+=== TABLE 22 ===
+Name	Size (bits)	Driver	Description
+Originator Data Channel Information and Control signals | These signals are Time Division Multiplexed (TDMed) according the OrigDataPortID value.	Originator Data Channel Information and Control signals | These signals are Time Division Multiplexed (TDMed) according the OrigDataPortID value.	Originator Data Channel Information and Control signals | These signals are Time Division Multiplexed (TDMed) according the OrigDataPortID value.	Originator Data Channel Information and Control signals | These signals are Time Division Multiplexed (TDMed) according the OrigDataPortID value.
+OrigDataVld	1	Originator	Originator Data Valid. This signal indicates that the Originator is presenting valid information (a data beat) on this channel.
+OrigDataPortID	2	Originator	Originator Data Port ID. Where the Originator drives the Originator Data Channel to a TL, indicates the Port associated with that TL that the Originator Data Channel Beat is to be presented on. For all Originators, OrigDataPortID indicates the TDM cycle for the Originator Data Channel.
+OrigData	512	Originator	Originator Data. This field contains the data for Writes, Vendor Defined Write class Commands, UPLI Write Message Requests, and Vendor Defined UPLI Write Message | Requests. This field also contains the Operand Data for Atomics and Vendor Define Atomic class Commands.
+OrigDataByteEn	64 (one bit per | byte)	Originator	Originator Data Byte Enables. OrigDataByteEn bit for each eight bits of the OrigData field. These signals indicate which byte lanes of OrigData hold valid information.
+OrigDataOffset	2	Originator	Originator Data Offset. Indicates the index of the current Data Beat. Data to be | written is transferred from the Originator in the OrigData field in one or more Beats. Each beat is sequentially assigned a number starting at 0 and ending with n-1, based on the order of the data in memory; n is the total number of beats required to | transfer the data to be written. When the transfer requires more than one Beat, the | originator shall begin with beat 0 and continue in Beat order. This field indicates the number of the Beat being presented on this transfer cycle.
+OrigDataLast	1	Originator	Originator Data Last. This signal is asserted with the last Data Beat of an Originator Data Transfer.
+OrigDataError	1	Originator	Originator Data Error. When asserted this signal indicates that the current Data Beat contains a data error.
+OrigDataVC	2	Originator	Originator Data Virtual Channel. Specifies the Virtual Channel of the Originator Data Beat. Matches the Virtual Channel of the original Request (ReqVC). In UALink 1.0, | this field is informational only to the Switch with the exception that this value is | returned to the Sender in the Credit Return signals. The Switch has one virtual channel and passes this field through to the Destination Accelerator unchanged.
+OrigDataPool	1	Originator	Originator Data Pool. Specifies whether the Originator Data Beat was issued using a Pool Credit (OrigDataPool = 1) or a Virtual Channel Credit (OrigDataPool = 0).
+Originator Data Channel Credit Return signals | These signals are not Time Division Multiplexed (TDMed). A Credit or Credits for any port may be returned on any cycle.	Originator Data Channel Credit Return signals | These signals are not Time Division Multiplexed (TDMed). A Credit or Credits for any port may be returned on any cycle.	Originator Data Channel Credit Return signals | These signals are not Time Division Multiplexed (TDMed). A Credit or Credits for any port may be returned on any cycle.	Originator Data Channel Credit Return signals | These signals are not Time Division Multiplexed (TDMed). A Credit or Credits for any port may be returned on any cycle.
+OrigDataCreditInitDone	4	Completer	Originator Data Credit Initialization Done. When Asserted, indicates to Originator that the initial Credit release for the port associated with the individual signal is complete (OrigDataCreditInitDone[2] indicates port 2 is complete). The individual “done” signals can be asserted independently and once asserted remain asserted | until the interface is reset or powered off.
+OrigDataCreditVld	4	Completer	Originator Data Credit Valid. Indicates a Credit or Credits is being released to the Originator. Credits are per port. A Station may have 1, 2 or 4 ports. | OrigDataCreditVld[n] corresponds to Port[n]. Credits can be released on more than one port simultaneously.
+OrigDataCreditPool	4	Completer	Indicates the type of Credit indicated on OrigDataPool for the Originator Data Beat that consumed the Pool or Virtual Channel Credit of Credits being released. If ‘0’, the Credit or Credits being released is a Virtual Channel Credit and if ‘1’, the Credit or Credits released is a Pool Credit. The OrigDataVC value for the Originator Data Beat corresponding to the returned Credit or Credits is placed on the appropriate | OrigDataCreditPort[0,1,2,3]VC signal.
+OrigDataCreditPort0VC	2	Completer	Originator Data Credit Port 0 Virtual Channel. Indicates the Virtual Channel | indicated on OrigDataVC for the Originator Data Beat that consumed the Pool or Virtual Channel Credit or Credits being released for Port0. Valid when | OrigDataCreditVld[0] is asserted.
+
+=== TABLE 23 ===
+Name	Size (bits)	Driver	Description
+OrigDataCreditPort1VC	2	Completer	Originator Data Credit Port 1 Virtual Channel. Indicates the Virtual Channel | indicated on OrigDataVC for the Originator Data Beat that consumed the Pool or Virtual Channel Credit or Credits being released for Port1. Valid when | OrigDataCreditVld[1] is asserted.
+OrigDataCreditPort2VC	2	Completer	Originator Data Credit Port 2 Virtual Channel. Indicates the Virtual Channel | indicated on OrigDataVC for the Originator Data Beat that consumed the Pool or Virtual Channel Credit or Credits being released for Port2. Valid when | OrigDataCreditVld[2] is asserted.
+OrigDataCreditPort3VC	2	Completer	Originator Data Credit Port 3 Virtual Channel. Indicates the Virtual Channel | indicated on OrigDataVC for the Originator Data Beat that consumed the Pool or Virtual Channel Credit or Credits being released for Port3. Valid when | OrigDataCreditVld[3] is asserted.
+OrigDataCreditPort0Num	2	Completer	Originator Data Credit Port 0 Number of Credits. Indicates the number of Credits being returned for Port0 (up to 4, OrigDataCreditPort0Num+1). Only valid when OrigDataCreditVld[0] is asserted.
+OrigDataCreditPort1Num	2	Completer	Originator Data Credit Port 1 Number of Credits. Indicates the number of Credits being returned for Port1 (up to 4, OrigDataCreditPort1Num+1). Only valid when OrigDataCreditVld[1] is asserted.
+OrigDataCreditPort2Num	2	Completer	Originator Data Credit Port 2 Number of Credits. Indicates the number of Credits being returned for Port2 (up to 4, OrigDataCreditPort2Num+1). Only valid when | OrigDataCreditVld[2] is asserted.
+OrigDataCreditPort3Num	2	Completer	Originator Data Credit Port 3 Number of Credits. Indicates the number of Credits being returned for Port3 (up to 4, OrigDataCreditPort3Num+1). Only valid when OrigDataCreditVld[3] is asserted.
+Originator Data Channel Parity signals	Originator Data Channel Parity signals	Originator Data Channel Parity signals	Originator Data Channel Parity signals
+OrigDataVldParity	1	Originator	Originator Data Valid Parity. Even parity across OrigDataVld. Checked every cycle.
+OrigDataParity	8	Originator	Originator Data Parity. Originator data parity. Each bit in OrigDataParity provides even-parity based error protection for 64 bits of the OrigData field. The number of set bits in OrigDataParity[i] and OrigData[((i+1)*64-1):(i*64)] is always even, | including data bytes where the OrigDataByteEn masks some or all bytes in that | parity group. Checked only when OrigDataVld is asserted.
+OrigDataByteEnParity	1	Originator	Originator Data Byte Enables Parity. Even parity across OrigDataByteEnParity. Checked only when OrigDataVld is asserted.
+OrigDataFieldsParity	1	Originator	Originator Data Fields Parity. OrigDataFieldsParity provides even parity over | OrigDataLast, OrigDataError, OrigDataOffset, OrigDataPortID, OrigDataVC. Checked only when OrigDataVld is asserted.
+OrigDataCreditVldParity	1	Completer	Originator Data Credit Valid Parity. Even parity across OrigDataCreditVld. Checked every cycle.
+OrigDataCreditParity	1	Completer	Originator Data Credit Parity. Even parity across OrigDataCreditPort0VC, OrigDataCreditPort1VC, OrigDataCreditPort2VC, OrigDataCreditPort3VC, | OrigDataCreditPort0Num, OrigDataCreditPort1Num, OrigDataCreditPort2Num, OrigDataCreditPort3Num, and OrigDataCreditPool. Checked in beats where OrigDataCreditVld is non-zero.
+
+=== TABLE 24 ===
+	Errors and Actions	Errors and Actions	Errors and Actions
+	Link Down	Data Error	Control & Protocol Errors
+Switch UALink	The Switch shall enter Drop Mode at the affected Switch TL for the affected port only. – The TL shall drop traffic in both directions on all channels for the affected port. | The Switch shall notify firmware which will log the error. | All ports on the Station except the port attached to the dropped link shall continue to function. | Returning the Link to an active state shall not have any impact to other ports on the Station. | All UPLI channels attached to the Switch TL shall remain active and maintain their credits throughout the | link going down and being returned to an active state.	The Data Error signal shall be asserted to indicate poisoned or corrupted data for the corrupted beat. | Good parity shall be | generated for the Beat and the data shall be forwarded with the asserted Data Error Signal. | The Switch Core shall Notify firmware which will log the error.	Protocol and Control errors shall be handled similarly at the Switch. | Drop Mode shall be entered at the Completer, Originator, or TL that detected the error for all ports. | Traffic shall be dropped in both directions on all channels for the affected ports. | The Switch shall notify firmware which will log the error. | Recovery may require a full reset of the Station or possibly the full Switch to resume operation.
+Switch Core	No action needed in the switch core. | Handled by the Switch TL, Accelerator TL, and the Accelerator Originator.	The Data Error signal shall be asserted to indicate poisoned or corrupted data for the corrupted beat. | Good parity shall be | generated for the Beat and the data shall be forwarded with the asserted Data Error Signal. | The Switch Core shall Notify firmware which will log the error.	The Switch shall enter Drop Mode at the egress Originator for all ports. | The Originator shall drop traffic in both directions on all channels for the affected ports. | Log error and notify firmware. | Protocol and Control Errors detected within a switch Core may impact the entire Switch and all virtual Pods, however | implementations may choose to reduce the impact, where possible, to a given Station or Stations. | The Switch shall go through a full Reset to resume operation.
+Accelerator	The affected Accelerator TL shall enter Drop Mode for all ports in the TL (station). | Drop traffic in both directions on all channels for the affected ports. | The affected TL shall issue an ISOLATE Write Response to Originator to cause Originator to enter Isolation Mode. | The affected TL shall notify firmware which will log the error. | All UPLI channels attached to the Accelerator TL shall remain active and maintain their credits throughout the link going down and being returned to an active state. | Firmware may choose to reduce the number of active Links before resuming the applications on the Accelerator.	The Data Error signal shall be asserted to indicate poisoned or corrupted data for the corrupted beat. | Good parity shall be | generated for the Beat and the data shall be forwarded with the asserted Data Error Signal. | The Switch Core shall Notify firmware which will log the error.	Protocol and Control Errors at | the Accelerator should be handled similarly. | The Originator or Completer that detected the Error shall Enter Drop Mode at the Originator or Completer. | Traffic shall be dropped in both directions on all channels for the affected ports. | The Switch shall notify firmware which will log the error. | Protocol and Control Errors are low probability event and | implementations are expected to impact the entire Accelerator for these errors. However, | implementations may be able to isolate and recover errors more precisely. | The level of Reset required to resume operation is | implementation specific.
+
+=== TABLE 25 ===
+64-byte TL Flit	64-byte TL Flit	64-byte TL Flit	64-byte TL Flit	64-byte TL Flit	64-byte TL Flit	64-byte TL Flit	64-byte TL Flit	64-byte TL Flit	64-byte TL Flit	64-byte TL Flit	64-byte TL Flit	64-byte TL Flit	64-byte TL Flit	64-byte TL Flit	64-byte TL Flit
+Upper TL Half-Flit	Upper TL Half-Flit	Upper TL Half-Flit	Upper TL Half-Flit	Upper TL Half-Flit	Upper TL Half-Flit	Upper TL Half-Flit	Upper TL Half-Flit	Lower TL Half-Flit	Lower TL Half-Flit	Lower TL Half-Flit	Lower TL Half-Flit	Lower TL Half-Flit	Lower TL Half-Flit	Lower TL Half-Flit	Lower TL Half-Flit
+15	14	13	12	11	10	9	8	7	6	5	4	3	2	1	0
+
+=== TABLE 26 ===
+Field Type	Legal Sector Footprint
+4 sector Request	7654 or 3210
+2 sector Compressed Request	76 or 54 or 32 or 10
+2 sector Response	76 or 54 or 32 or 10
+1 sector Compressed Response	7 or 6 or 5 or 4 or 3 or 2 or 1 or 0
+Flow Control/NOP Information	7 or 6 or 5 or 4 or 3 or 2 or 1 or 0
+
+=== TABLE 27 ===
+64-byte TL Flit	64-byte TL Flit	64-byte TL Flit	64-byte TL Flit	64-byte TL Flit	64-byte TL Flit	64-byte TL Flit	64-byte TL Flit	64-byte TL Flit	64-byte TL Flit	64-byte TL Flit	64-byte TL Flit	64-byte TL Flit	64-byte TL Flit	64-byte TL Flit	64-byte TL Flit	64-byte TL Flit	64-byte TL Flit
+Msg	Upper TL Half-Flit 32bytes	Upper TL Half-Flit 32bytes	Upper TL Half-Flit 32bytes	Upper TL Half-Flit 32bytes	Upper TL Half-Flit 32bytes	Upper TL Half-Flit 32bytes	Upper TL Half-Flit 32bytes	Upper TL Half-Flit 32bytes	Msg	Lower TL Half-Flit 32 bytes	Lower TL Half-Flit 32 bytes	Lower TL Half-Flit 32 bytes	Lower TL Half-Flit 32 bytes	Lower TL Half-Flit 32 bytes	Lower TL Half-Flit 32 bytes	Lower TL Half-Flit 32 bytes	Lower TL Half-Flit 32 bytes
+M1	15	14	13	12	11	10	9	8	M0	7	6	5	4	3	2	1	0
+
+=== TABLE 28 ===
+Msg	32-byte TL Half-Flit	32-byte TL Half-Flit
+Msg	31-byte Message Specific Payload	1-byte
+Indicator		Msg
+Bit (M1/M0)		Type
+
+=== TABLE 29 ===
+	64-byte TL Flit	64-byte TL Flit	64-byte TL Flit	64-byte TL Flit	64-byte TL Flit	64-byte TL Flit	64-byte TL Flit	64-byte TL Flit	64-byte TL Flit	64-byte TL Flit	64-byte TL Flit	64-byte TL Flit	64-byte TL Flit	64-byte TL Flit	64-byte TL Flit	64-byte TL Flit
+	Upper TL Half-Flit	Upper TL Half-Flit	Upper TL Half-Flit	Upper TL Half-Flit	Upper TL Half-Flit	Upper TL Half-Flit	Upper TL Half-Flit	Upper TL Half-Flit	Lower TL Half-Flit	Lower TL Half-Flit	Lower TL Half-Flit	Lower TL Half-Flit	Lower TL Half-Flit	Lower TL Half-Flit	Lower TL Half-Flit	Lower TL Half-Flit
+	15	14	13	12	11	10	9	8	7	6	5	4	3	2	1	0
+Flit																
+0	MANDATORY NOP	MANDATORY NOP	MANDATORY NOP	MANDATORY NOP	MANDATORY NOP	MANDATORY NOP	MANDATORY NOP	MANDATORY NOP	Req0 (Read)	Req0 (Read)	Req0 (Read)	Req0 (Read)	NOP	NOP	NOP	NOP
+
+=== TABLE 30 ===
+	64-byte TL Flit	64-byte TL Flit	64-byte TL Flit	64-byte TL Flit	64-byte TL Flit	64-byte TL Flit	64-byte TL Flit	64-byte TL Flit	64-byte TL Flit	64-byte TL Flit	64-byte TL Flit	64-byte TL Flit	64-byte TL Flit	64-byte TL Flit	64-byte TL Flit	64-byte TL Flit
+	Upper TL Half-Flit	Upper TL Half-Flit	Upper TL Half-Flit	Upper TL Half-Flit	Upper TL Half-Flit	Upper TL Half-Flit	Upper TL Half-Flit	Upper TL Half-Flit	Lower TL Half-Flit	Lower TL Half-Flit	Lower TL Half-Flit	Lower TL Half-Flit	Lower TL Half-Flit	Lower TL Half-Flit	Lower TL Half-Flit	Lower TL Half-Flit
+	15	14	13	12	11	10	9	8	7	6	5	4	3	2	1	0
+Flit																
+0	Req0.Data.0	Req0.Data.0	Req0.Data.0	Req0.Data.0	Req0.Data.0	Req0.Data.0	Req0.Data.0	Req0.Data.0	Req0 (WriteFull)	Req0 (WriteFull)	Req0 (WriteFull)	Req0 (WriteFull)	NOP	NOP	NOP	NOP
+1	Req0.Data.2	Req0.Data.2	Req0.Data.2	Req0.Data.2	Req0.Data.2	Req0.Data.2	Req0.Data.2	Req0.Data.2	Req0.Data.1	Req0.Data.1	Req0.Data.1	Req0.Data.1	Req0.Data.1	Req0.Data.1	Req0.Data.1	Req0.Data.1
+2	Req0.Data.4	Req0.Data.4	Req0.Data.4	Req0.Data.4	Req0.Data.4	Req0.Data.4	Req0.Data.4	Req0.Data.4	Req0.Data.3	Req0.Data.3	Req0.Data.3	Req0.Data.3	Req0.Data.3	Req0.Data.3	Req0.Data.3	Req0.Data.3
+3	Req0.Data.6	Req0.Data.6	Req0.Data.6	Req0.Data.6	Req0.Data.6	Req0.Data.6	Req0.Data.6	Req0.Data.6	Req0.Data.5	Req0.Data.5	Req0.Data.5	Req0.Data.5	Req0.Data.5	Req0.Data.5	Req0.Data.5	Req0.Data.5
+4	Req0.Data.7	Req0.Data.7	Req0.Data.7	Req0.Data.7	Req0.Data.7	Req0.Data.7	Req0.Data.7	Req0.Data.7	NOP	NOP	NOP	NO	FC	NOP	NOP	NOP
+
+=== TABLE 31 ===
+	64-byte TL Flit	64-byte TL Flit	64-byte TL Flit	64-byte TL Flit	64-byte TL Flit	64-byte TL Flit	64-byte TL Flit	64-byte TL Flit	64-byte TL Flit	64-byte TL Flit	64-byte TL Flit	64-byte TL Flit	64-byte TL Flit	64-byte TL Flit	64-byte TL Flit	64-byte TL Flit
+	Upper TL Half-Flit	Upper TL Half-Flit	Upper TL Half-Flit	Upper TL Half-Flit	Upper TL Half-Flit	Upper TL Half-Flit	Upper TL Half-Flit	Upper TL Half-Flit	Lower TL Half-Flit	Lower TL Half-Flit	Lower TL Half-Flit	Lower TL Half-Flit	Lower TL Half-Flit	Lower TL Half-Flit	Lower TL Half-Flit	Lower TL Half-Flit
+	15	14	13	12	11	10	9	8	7	6	5	4	3	2	1	0
+Flit																
+0	Req0.Data.0	Req0.Data.0	Req0.Data.0	Req0.Data.0	Req0.Data.0	Req0.Data.0	Req0.Data.0	Req0.Data.0	NOP	NOP	NOP	NOP	Req0(Write)	Req0(Write)	Req0(Write)	Req0(Write)
+1	Req0.Data.2	Req0.Data.2	Req0.Data.2	Req0.Data.2	Req0.Data.2	Req0.Data.2	Req0.Data.2	Req0.Data.2	Req0.Data.1	Req0.Data.1	Req0.Data.1	Req0.Data.1	Req0.Data.1	Req0.Data.1	Req0.Data.1	Req0.Data.1
+2	Req0.Data.4	Req0.Data.4	Req0.Data.4	Req0.Data.4	Req0.Data.4	Req0.Data.4	Req0.Data.4	Req0.Data.4	Req0.Data.3	Req0.Data.3	Req0.Data.3	Req0.Data.3	Req0.Data.3	Req0.Data.3	Req0.Data.3	Req0.Data.3
+3	Req0.ByteEnables	Req0.ByteEnables	Req0.ByteEnables	Req0.ByteEnables	Req0.ByteEnables	Req0.ByteEnables	Req0.ByteEnables	Req0.ByteEnables	Req0.Data.5	Req0.Data.5	Req0.Data.5	Req0.Data.5	Req0.Data.5	Req0.Data.5	Req0.Data.5	Req0.Data.5
+
+=== TABLE 32 ===
+	64-byte TL Flit	64-byte TL Flit	64-byte TL Flit	64-byte TL Flit	64-byte TL Flit	64-byte TL Flit	64-byte TL Flit	64-byte TL Flit	64-byte TL Flit	64-byte TL Flit	64-byte TL Flit	64-byte TL Flit	64-byte TL Flit	64-byte TL Flit	64-byte TL Flit	64-byte TL Flit
+	Upper TL Half-Flit	Upper TL Half-Flit	Upper TL Half-Flit	Upper TL Half-Flit	Upper TL Half-Flit	Upper TL Half-Flit	Upper TL Half-Flit	Upper TL Half-Flit	Lower TL Half-Flit	Lower TL Half-Flit	Lower TL Half-Flit	Lower TL Half-Flit	Lower TL Half-Flit	Lower TL Half-Flit	Lower TL Half-Flit	Lower TL Half-Flit
+	15	14	13	12	11	10	9	8	7	6	5	4	3	2	1	0
+Flit																
+0	Req0.Data.0	Req0.Data.0	Req0.Data.0	Req0.Data.0	Req0.Data.0	Req0.Data.0	Req0.Data.0	Req0.Data.0	Req1 (AtomicR)	Req1 (AtomicR)	Req1 (AtomicR)	Req1 (AtomicR)	FC	NOP	Req0	Req0
+1	Req0.ByteEnables	Req0.ByteEnables	Req0.ByteEnables	Req0.ByteEnables	Req0.ByteEnables	Req0.ByteEnables	Req0.ByteEnables	Req0.ByteEnables	Req0.Data.1	Req0.Data.1	Req0.Data.1	Req0.Data.1	Req0.Data.1	Req0.Data.1	Req0.Data.1	Req0.Data.1
+2	Req1.AtomicOperands.1	Req1.AtomicOperands.1	Req1.AtomicOperands.1	Req1.AtomicOperands.1	Req1.AtomicOperands.1	Req1.AtomicOperands.1	Req1.AtomicOperands.1	Req1.AtomicOperands.1	Req1.AtomicOperands.0	Req1.AtomicOperands.0	Req1.AtomicOperands.0	Req1.AtomicOperands.0	Req1.AtomicOperands.0	Req1.AtomicOperands.0	Req1.AtomicOperands.0	Req1.AtomicOperands.0
+	Req1.AtomicByteEnables	Req1.AtomicByteEnables	Req1.AtomicByteEnables	Req1.AtomicByteEnables	Req1.AtomicByteEnables	Req1.AtomicByteEnables	Req1.AtomicByteEnables	Req1.AtomicByteEnables	NOP	NOP	FC	NOP	FC	FC	NOP	NOP
+
+=== TABLE 33 ===
+	64-byte TL Flit	64-byte TL Flit	64-byte TL Flit	64-byte TL Flit	64-byte TL Flit	64-byte TL Flit	64-byte TL Flit	64-byte TL Flit	64-byte TL Flit	64-byte TL Flit	64-byte TL Flit	64-byte TL Flit	64-byte TL Flit	64-byte TL Flit	64-byte TL Flit	64-byte TL Flit
+	Upper TL Half-Flit	Upper TL Half-Flit	Upper TL Half-Flit	Upper TL Half-Flit	Upper TL Half-Flit	Upper TL Half-Flit	Upper TL Half-Flit	Upper TL Half-Flit	Lower TL Half-Flit	Lower TL Half-Flit	Lower TL Half-Flit	Lower TL Half-Flit	Lower TL Half-Flit	Lower TL Half-Flit	Lower TL Half-Flit	Lower TL Half-Flit
+	15	14	13	12	11	10	9	8	7	6	5	4	3	2	1	0
+Flit																
+0	Req0.AtomicOperands.0	Req0.AtomicOperands.0	Req0.AtomicOperands.0	Req0.AtomicOperands.0	Req0.AtomicOperands.0	Req0.AtomicOperands.0	Req0.AtomicOperands.0	Req0.AtomicOperands.0	Req1 (AtomicR)	Req1 (AtomicR)	Req1 (AtomicR)	Req1 (AtomicR)	Req0 (AtomicNR)	Req0 (AtomicNR)	Req0 (AtomicNR)	Req0 (AtomicNR)
+1	Req0.AtomicByteEnables	Req0.AtomicByteEnables	Req0.AtomicByteEnables	Req0.AtomicByteEnables	Req0.AtomicByteEnables	Req0.AtomicByteEnables	Req0.AtomicByteEnables	Req0.AtomicByteEnables	Req0.AtomicOperands.1	Req0.AtomicOperands.1	Req0.AtomicOperands.1	Req0.AtomicOperands.1	Req0.AtomicOperands.1	Req0.AtomicOperands.1	Req0.AtomicOperands.1	Req0.AtomicOperands.1
+2	Req1.AtomicOperands.1	Req1.AtomicOperands.1	Req1.AtomicOperands.1	Req1.AtomicOperands.1	Req1.AtomicOperands.1	Req1.AtomicOperands.1	Req1.AtomicOperands.1	Req1.AtomicOperands.1	Req1.AtomicOperands.0	Req1.AtomicOperands.0	Req1.AtomicOperands.0	Req1.AtomicOperands.0	Req1.AtomicOperands.0	Req1.AtomicOperands.0	Req1.AtomicOperands.0	Req1.AtomicOperands.0
+	Req1.AtomicByteEnables	Req1.AtomicByteEnables	Req1.AtomicByteEnables	Req1.AtomicByteEnables	Req1.AtomicByteEnables	Req1.AtomicByteEnables	Req1.AtomicByteEnables	Req1.AtomicByteEnables	NOP	NOP	NOP	NOP	NOP	NOP	NOP	NOP
+
+=== TABLE 34 ===
+	64-byte TL Flit	64-byte TL Flit	64-byte TL Flit	64-byte TL Flit	64-byte TL Flit	64-byte TL Flit	64-byte TL Flit	64-byte TL Flit	64-byte TL Flit	64-byte TL Flit	64-byte TL Flit	64-byte TL Flit	64-byte TL Flit	64-byte TL Flit	64-byte TL Flit	64-byte TL Flit
+	Upper TL Half-Flit	Upper TL Half-Flit	Upper TL Half-Flit	Upper TL Half-Flit	Upper TL Half-Flit	Upper TL Half-Flit	Upper TL Half-Flit	Upper TL Half-Flit	Lower TL Half-Flit	Lower TL Half-Flit	Lower TL Half-Flit	Lower TL Half-Flit	Lower TL Half-Flit	Lower TL Half-Flit	Lower TL Half-Flit	Lower TL Half-Flit
+	15	14	13	12	11	10	9	8	7	6	5	4	3	2	1	0
+Flit																
+0	Req0.Data.0	Req0.Data.0	Req0.Data.0	Req0.Data.0	Req0.Data.0	Req0.Data.0	Req0.Data.0	Req0.Data.0	Req2 (AtomicNR)	Req2 (AtomicNR)	Req2 (AtomicNR)	Req2 (AtomicNR)	Req1	Req1	Req0	Req0
+1	Req0.Data.2	Req0.Data.2	Req0.Data.2	Req0.Data.2	Req0.Data.2	Req0.Data.2	Req0.Data.2	Req0.Data.2	Req0.Data.1	Req0.Data.1	Req0.Data.1	Req0.Data.1	Req0.Data.1	Req0.Data.1	Req0.Data.1	Req0.Data.1
+2	Req0.Data.4	Req0.Data.4	Req0.Data.4	Req0.Data.4	Req0.Data.4	Req0.Data.4	Req0.Data.4	Req0.Data.4	Req0.Data.3	Req0.Data.3	Req0.Data.3	Req0.Data.3	Req0.Data.3	Req0.Data.3	Req0.Data.3	Req0.Data.3
+3	Req0.Data.6	Req0.Data.6	Req0.Data.6	Req0.Data.6	Req0.Data.6	Req0.Data.6	Req0.Data.6	Req0.Data.6	Req0.Data.5	Req0.Data.5	Req0.Data.5	Req0.Data.5	Req0.Data.5	Req0.Data.5	Req0.Data.5	Req0.Data.5
+4	Req0.ByteEnables	Req0.ByteEnables	Req0.ByteEnables	Req0.ByteEnables	Req0.ByteEnables	Req0.ByteEnables	Req0.ByteEnables	Req0.ByteEnables	Req0.Data.7	Req0.Data.7	Req0.Data.7	Req0.Data.7	Req0.Data.7	Req0.Data.7	Req0.Data.7	Req0.Data.7
+5	Req1.Data.1	Req1.Data.1	Req1.Data.1	Req1.Data.1	Req1.Data.1	Req1.Data.1	Req1.Data.1	Req1.Data.1	Req1.Data.0	Req1.Data.0	Req1.Data.0	Req1.Data.0	Req1.Data.0	Req1.Data.0	Req1.Data.0	Req1.Data.0
+6	Req1.Data.3	Req1.Data.3	Req1.Data.3	Req1.Data.3	Req1.Data.3	Req1.Data.3	Req1.Data.3	Req1.Data.3	Req1.Data.2	Req1.Data.2	Req1.Data.2	Req1.Data.2	Req1.Data.2	Req1.Data.2	Req1.Data.2	Req1.Data.2
+7	Req1.Data.5	Req1.Data.5	Req1.Data.5	Req1.Data.5	Req1.Data.5	Req1.Data.5	Req1.Data.5	Req1.Data.5	Req1.Data.4	Req1.Data.4	Req1.Data.4	Req1.Data.4	Req1.Data.4	Req1.Data.4	Req1.Data.4	Req1.Data.4
+8	Req1.Data.7	Req1.Data.7	Req1.Data.7	Req1.Data.7	Req1.Data.7	Req1.Data.7	Req1.Data.7	Req1.Data.7	Req1.Data.6	Req1.Data.6	Req1.Data.6	Req1.Data.6	Req1.Data.6	Req1.Data.6	Req1.Data.6	Req1.Data.6
+9	Req2.AtomicOperands.1	Req2.AtomicOperands.1	Req2.AtomicOperands.1	Req2.AtomicOperands.1	Req2.AtomicOperands.1	Req2.AtomicOperands.1	Req2.AtomicOperands.1	Req2.AtomicOperands.1	Req2.AtomicOperands.0	Req2.AtomicOperands.0	Req2.AtomicOperands.0	Req2.AtomicOperands.0	Req2.AtomicOperands.0	Req2.AtomicOperands.0	Req2.AtomicOperands.0	Req2.AtomicOperands.0
+10	Req2.AtomicByteEnables	Req2.AtomicByteEnables	Req2.AtomicByteEnables	Req2.AtomicByteEnables	Req2.AtomicByteEnables	Req2.AtomicByteEnables	Req2.AtomicByteEnables	Req2.AtomicByteEnables	FC	NOP	NOP	NOP	NOP	NOP	NOP	NOP
+
+=== TABLE 35 ===
+	64-byte TL Flit	64-byte TL Flit	64-byte TL Flit	64-byte TL Flit	64-byte TL Flit	64-byte TL Flit	64-byte TL Flit	64-byte TL Flit	64-byte TL Flit	64-byte TL Flit	64-byte TL Flit	64-byte TL Flit	64-byte TL Flit	64-byte TL Flit	64-byte TL Flit	64-byte TL Flit
+	Upper TL Half-Flit	Upper TL Half-Flit	Upper TL Half-Flit	Upper TL Half-Flit	Upper TL Half-Flit	Upper TL Half-Flit	Upper TL Half-Flit	Upper TL Half-Flit	Lower TL Half-Flit	Lower TL Half-Flit	Lower TL Half-Flit	Lower TL Half-Flit	Lower TL Half-Flit	Lower TL Half-Flit	Lower TL Half-Flit	Lower TL Half-Flit
+	15	14	13	12	11	10	9	8	7	6	5	4	3	2	1	0
+Flit																
+0	0	0	AuthTag2	AuthTag2	AuthTag1	AuthTag1	AuthTag0	AuthTag0	Req2 (AtomicNR)	Req2 (AtomicNR)	Req2 (AtomicNR)	Req2 (AtomicNR)	Req1	Req1	Req0	Req0
+1	Req0.Data.1	Req0.Data.1	Req0.Data.1	Req0.Data.1	Req0.Data.1	Req0.Data.1	Req0.Data.1	Req0.Data.1	Req0.Data.0	Req0.Data.0	Req0.Data.0	Req0.Data.0	Req0.Data.0	Req0.Data.0	Req0.Data.0	Req0.Data.0
+2	Req0.Data.3	Req0.Data.3	Req0.Data.3	Req0.Data.3	Req0.Data.3	Req0.Data.3	Req0.Data.3	Req0.Data.3	Req0.Data.2	Req0.Data.2	Req0.Data.2	Req0.Data.2	Req0.Data.2	Req0.Data.2	Req0.Data.2	Req0.Data.2
+3	Req0.Data.5	Req0.Data.5	Req0.Data.5	Req0.Data.5	Req0.Data.5	Req0.Data.5	Req0.Data.5	Req0.Data.5	Req0.Data.4	Req0.Data.4	Req0.Data.4	Req0.Data.4	Req0.Data.4	Req0.Data.4	Req0.Data.4	Req0.Data.4
+4	Req0.Data.7	Req0.Data.7	Req0.Data.7	Req0.Data.7	Req0.Data.7	Req0.Data.7	Req0.Data.7	Req0.Data.7	Req0.Data.6	Req0.Data.6	Req0.Data.6	Req0.Data.6	Req0.Data.6	Req0.Data.6	Req0.Data.6	Req0.Data.6
+5	Req1.Data.1	Req1.Data.1	Req1.Data.1	Req1.Data.1	Req1.Data.1	Req1.Data.1	Req1.Data.1	Req1.Data.1	Req1.Data.0	Req1.Data.0	Req1.Data.0	Req1.Data.0	Req1.Data.0	Req1.Data.0	Req1.Data.0	Req1.Data.0
+6	Req1.Data.3	Req1.Data.3	Req1.Data.3	Req1.Data.3	Req1.Data.3	Req1.Data.3	Req1.Data.3	Req1.Data.3	Req1.Data.2	Req1.Data.2	Req1.Data.2	Req1.Data.2	Req1.Data.2	Req1.Data.2	Req1.Data.2	Req1.Data.2
+7	Req1.Data.5	Req1.Data.5	Req1.Data.5	Req1.Data.5	Req1.Data.5	Req1.Data.5	Req1.Data.5	Req1.Data.5	Req1.Data.4	Req1.Data.4	Req1.Data.4	Req1.Data.4	Req1.Data.4	Req1.Data.4	Req1.Data.4	Req1.Data.4
+8	Req1.Data.7	Req1.Data.7	Req1.Data.7	Req1.Data.7	Req1.Data.7	Req1.Data.7	Req1.Data.7	Req1.Data.7	Req1.Data.6	Req1.Data.6	Req1.Data.6	Req1.Data.6	Req1.Data.6	Req1.Data.6	Req1.Data.6	Req1.Data.6
+9	Req2.AtomicOperands.1	Req2.AtomicOperands.1	Req2.AtomicOperands.1	Req2.AtomicOperands.1	Req2.AtomicOperands.1	Req2.AtomicOperands.1	Req2.AtomicOperands.1	Req2.AtomicOperands.1	Req2.AtomicOperands.0	Req2.AtomicOperands.0	Req2.AtomicOperands.0	Req2.AtomicOperands.0	Req2.AtomicOperands.0	Req2.AtomicOperands.0	Req2.AtomicOperands.0	Req2.AtomicOperands.0
+10	Req2.AtomicByteEnables	Req2.AtomicByteEnables	Req2.AtomicByteEnables	Req2.AtomicByteEnables	Req2.AtomicByteEnables	Req2.AtomicByteEnables	Req2.AtomicByteEnables	Req2.AtomicByteEnables	NOP	NOP	FC	NOP	FC	FC	NOP	NOP
+
+=== TABLE 36 ===
+	(Tx Channel) 64-byte TL Flit	(Tx Channel) 64-byte TL Flit	(Tx Channel) 64-byte TL Flit	(Tx Channel) 64-byte TL Flit	(Tx Channel) 64-byte TL Flit	(Tx Channel) 64-byte TL Flit	(Tx Channel) 64-byte TL Flit	(Tx Channel) 64-byte TL Flit	(Tx Channel) 64-byte TL Flit	(Tx Channel) 64-byte TL Flit	(Tx Channel) 64-byte TL Flit	(Tx Channel) 64-byte TL Flit	(Tx Channel) 64-byte TL Flit	(Tx Channel) 64-byte TL Flit	(Tx Channel) 64-byte TL Flit	(Tx Channel) 64-byte TL Flit
+	Upper TL Half-Flit	Upper TL Half-Flit	Upper TL Half-Flit	Upper TL Half-Flit	Upper TL Half-Flit	Upper TL Half-Flit	Upper TL Half-Flit	Upper TL Half-Flit	Lower TL Half-Flit	Lower TL Half-Flit	Lower TL Half-Flit	Lower TL Half-Flit	Lower TL Half-Flit	Lower TL Half-Flit	Lower TL Half-Flit	Lower TL Half-Flit
+	15	14	13	12	11	10	9	8	7	6	5	4	3	2	1	0
+Flit																
+0	MANDATORY NOP	MANDATORY NOP	MANDATORY NOP	MANDATORY NOP	MANDATORY NOP	MANDATORY NOP	MANDATORY NOP	MANDATORY NOP	Req2 (Read)	Req2 (Read)	Req2 (Read)	Req2 (Read)	Req1	Req1	Req0	Req0
+
+=== TABLE 37 ===
+	(Rx Channel) 64-byte TL Flit	(Rx Channel) 64-byte TL Flit	(Rx Channel) 64-byte TL Flit	(Rx Channel) 64-byte TL Flit	(Rx Channel) 64-byte TL Flit	(Rx Channel) 64-byte TL Flit	(Rx Channel) 64-byte TL Flit	(Rx Channel) 64-byte TL Flit	(Rx Channel) 64-byte TL Flit	(Rx Channel) 64-byte TL Flit	(Rx Channel) 64-byte TL Flit	(Rx Channel) 64-byte TL Flit	(Rx Channel) 64-byte TL Flit	(Rx Channel) 64-byte TL Flit	(Rx Channel) 64-byte TL Flit	(Rx Channel) 64-byte TL Flit	(Rx Channel) 64-byte TL Flit
+	Upper TL Half-Flit	Upper TL Half-Flit	Upper TL Half-Flit	Upper TL Half-Flit	Upper TL Half-Flit	Upper TL Half-Flit	Upper TL Half-Flit	Upper TL Half-Flit	Lower TL Half-Flit	Lower TL Half-Flit	Lower TL Half-Flit	Lower TL Half-Flit	Lower TL Half-Flit	Lower TL Half-Flit	Lower TL Half-Flit	Lower TL Half-Flit	Lower TL Half-Flit
+	15	14	13	12	11	10	9	8	7	6	6	5	4	3	2	1	0
+Flit																	
+0	Rsp0.Data.0	Rsp0.Data.0	Rsp0.Data.0	Rsp0.Data.0	Rsp0.Data.0	Rsp0.Data.0	Rsp0.Data.0	Rsp0.Data.0	RdRsp1	RdRsp1	RdRsp1	RdRsp2	RdRsp2	NOP	CRR 0	NOP	NOP
+1	Rsp0.Data.2	Rsp0.Data.2	Rsp0.Data.2	Rsp0.Data.2	Rsp0.Data.2	Rsp0.Data.2	Rsp0.Data.2	Rsp0.Data.2	Rsp0.Data.1	Rsp0.Data.1	Rsp0.Data.1	Rsp0.Data.1	Rsp0.Data.1	Rsp0.Data.1	Rsp0.Data.1	Rsp0.Data.1	Rsp0.Data.1
+2	Rsp2.Data.0	Rsp2.Data.0	Rsp2.Data.0	Rsp2.Data.0	Rsp2.Data.0	Rsp2.Data.0	Rsp2.Data.0	Rsp2.Data.0	Rsp0.Data.3	Rsp0.Data.3	Rsp0.Data.3	Rsp0.Data.3	Rsp0.Data.3	Rsp0.Data.3	Rsp0.Data.3	Rsp0.Data.3	Rsp0.Data.3
+3	Rsp2.Data.2	Rsp2.Data.2	Rsp2.Data.2	Rsp2.Data.2	Rsp2.Data.2	Rsp2.Data.2	Rsp2.Data.2	Rsp2.Data.2	Rsp2.Data.1	Rsp2.Data.1	Rsp2.Data.1	Rsp2.Data.1	Rsp2.Data.1	Rsp2.Data.1	Rsp2.Data.1	Rsp2.Data.1	Rsp2.Data.1
+4	Rsp1.Data.0	Rsp1.Data.0	Rsp1.Data.0	Rsp1.Data.0	Rsp1.Data.0	Rsp1.Data.0	Rsp1.Data.0	Rsp1.Data.0	Rsp2.Data.3	Rsp2.Data.3	Rsp2.Data.3	Rsp2.Data.3	Rsp2.Data.3	Rsp2.Data.3	Rsp2.Data.3	Rsp2.Data.3	Rsp2.Data.3
+5	Rsp1.Data.2	Rsp1.Data.2	Rsp1.Data.2	Rsp1.Data.2	Rsp1.Data.2	Rsp1.Data.2	Rsp1.Data.2	Rsp1.Data.2	Rsp1.Data.1	Rsp1.Data.1	Rsp1.Data.1	Rsp1.Data.1	Rsp1.Data.1	Rsp1.Data.1	Rsp1.Data.1	Rsp1.Data.1	Rsp1.Data.1
+6	Rsp1.Data.3	Rsp1.Data.3	Rsp1.Data.3	Rsp1.Data.3	Rsp1.Data.3	Rsp1.Data.3	Rsp1.Data.3	Rsp1.Data.3	NOP	NOP	NOP	NOP	NOP	NOP	NOP	NOP	NOP
+
+=== TABLE 38 ===
+	64-byte TL Flit	64-byte TL Flit	64-byte TL Flit	64-byte TL Flit	64-byte TL Flit	64-byte TL Flit	64-byte TL Flit	64-byte TL Flit	64-byte TL Flit	64-byte TL Flit	64-byte TL Flit	64-byte TL Flit	64-byte TL Flit	64-byte TL Flit	64-byte TL Flit	64-byte TL Flit
+	Upper TL Half-Flit	Upper TL Half-Flit	Upper TL Half-Flit	Upper TL Half-Flit	Upper TL Half-Flit	Upper TL Half-Flit	Upper TL Half-Flit	Upper TL Half-Flit	Lower TL Half-Flit	Lower TL Half-Flit	Lower TL Half-Flit	Lower TL Half-Flit	Lower TL Half-Flit	Lower TL Half-Flit	Lower TL Half-Flit	Lower TL Half-Flit
+	15	14	13	12	11	10	9	8	7	6	5	4	3	2	1	0
+Flit																
+0	Req0.Data.0	Req0.Data.0	Req0.Data.0	Req0.Data.0	Req0.Data.0	Req0.Data.0	Req0.Data.0	Req0.Data.0	Req0 (WriteFull)	Req0 (WriteFull)	Req0 (WriteFull)	Req0 (WriteFull)	NOP	NOP	NOP	NOP
+1	TL Msg: Data Poisoned 0x20	TL Msg: Data Poisoned 0x20	TL Msg: Data Poisoned 0x20	TL Msg: Data Poisoned 0x20	TL Msg: Data Poisoned 0x20	TL Msg: Data Poisoned 0x20	TL Msg: Data Poisoned 0x20	TL Msg: Data Poisoned 0x20	Req0.Data.1	Req0.Data.1	Req0.Data.1	Req0.Data.1	Req0.Data.1	Req0.Data.1	Req0.Data.1	Req0.Data.1
+2	Req0.Data.4	Req0.Data.4	Req0.Data.4	Req0.Data.4	Req0.Data.4	Req0.Data.4	Req0.Data.4	Req0.Data.4	TL Msg: Data Poisoned 0x20	TL Msg: Data Poisoned 0x20	TL Msg: Data Poisoned 0x20	TL Msg: Data Poisoned 0x20	TL Msg: Data Poisoned 0x20	TL Msg: Data Poisoned 0x20	TL Msg: Data Poisoned 0x20	TL Msg: Data Poisoned 0x20
+3	Req0.Data.6	Req0.Data.6	Req0.Data.6	Req0.Data.6	Req0.Data.6	Req0.Data.6	Req0.Data.6	Req0.Data.6	Req0.Data.5	Req0.Data.5	Req0.Data.5	Req0.Data.5	Req0.Data.5	Req0.Data.5	Req0.Data.5	Req0.Data.5
+4	Req0.Data.7	Req0.Data.7	Req0.Data.7	Req0.Data.7	Req0.Data.7	Req0.Data.7	Req0.Data.7	Req0.Data.7	NOP	NOP	NOP	NOP	FC	NOP	NOP	NOP
+
+=== TABLE 39 ===
+	64-byte TL Flit	64-byte TL Flit	64-byte TL Flit	64-byte TL Flit	64-byte TL Flit	64-byte TL Flit	64-byte TL Flit	64-byte TL Flit	64-byte TL Flit	64-byte TL Flit	64-byte TL Flit	64-byte TL Flit	64-byte TL Flit	64-byte TL Flit	64-byte TL Flit	64-byte TL Flit
+	Upper TL Half-Flit	Upper TL Half-Flit	Upper TL Half-Flit	Upper TL Half-Flit	Upper TL Half-Flit	Upper TL Half-Flit	Upper TL Half-Flit	Upper TL Half-Flit	Lower TL Half-Flit	Lower TL Half-Flit	Lower TL Half-Flit	Lower TL Half-Flit	Lower TL Half-Flit	Lower TL Half-Flit	Lower TL Half-Flit	Lower TL Half-Flit
+	15	14	13	12	11	10	9	8	7	6	5	4	3	2	1	0
+Flit																
+0	Req0.Data.0	Req0.Data.0	Req0.Data.0	Req0.Data.0	Req0.Data.0	Req0.Data.0	Req0.Data.0	Req0.Data.0	Req1 (AtomicR)	Req1 (AtomicR)	Req1 (AtomicR)	Req1 (AtomicR)	FC	NOP	Req0	Req0
+1	Req0.ByteEnables	Req0.ByteEnables	Req0.ByteEnables	Req0.ByteEnables	Req0.ByteEnables	Req0.ByteEnables	Req0.ByteEnables	Req0.ByteEnables	Req0.Data.1	Req0.Data.1	Req0.Data.1	Req0.Data.1	Req0.Data.1	Req0.Data.1	Req0.Data.1	Req0.Data.1
+2	TL Msg: Data Poisoned 0x20	TL Msg: Data Poisoned 0x20	TL Msg: Data Poisoned 0x20	TL Msg: Data Poisoned 0x20	TL Msg: Data Poisoned 0x20	TL Msg: Data Poisoned 0x20	TL Msg: Data Poisoned 0x20	TL Msg: Data Poisoned 0x20	TL Msg: Data Poisoned 0x20	TL Msg: Data Poisoned 0x20	TL Msg: Data Poisoned 0x20	TL Msg: Data Poisoned 0x20	TL Msg: Data Poisoned 0x20	TL Msg: Data Poisoned 0x20	TL Msg: Data Poisoned 0x20	TL Msg: Data Poisoned 0x20
+	Req1.AtomicByteEnables	Req1.AtomicByteEnables	Req1.AtomicByteEnables	Req1.AtomicByteEnables	Req1.AtomicByteEnables	Req1.AtomicByteEnables	Req1.AtomicByteEnables	Req1.AtomicByteEnables	NOP	NOP	FC	NOP	FC	FC	NOP	NOP
+
+=== TABLE 40 ===
+	64-byte TL Flit	64-byte TL Flit	64-byte TL Flit	64-byte TL Flit	64-byte TL Flit	64-byte TL Flit	64-byte TL Flit	64-byte TL Flit	64-byte TL Flit	64-byte TL Flit	64-byte TL Flit	64-byte TL Flit	64-byte TL Flit	64-byte TL Flit	64-byte TL Flit	64-byte TL Flit
+	Upper TL Half-Flit	Upper TL Half-Flit	Upper TL Half-Flit	Upper TL Half-Flit	Upper TL Half-Flit	Upper TL Half-Flit	Upper TL Half-Flit	Upper TL Half-Flit	Lower TL Half-Flit	Lower TL Half-Flit	Lower TL Half-Flit	Lower TL Half-Flit	Lower TL Half-Flit	Lower TL Half-Flit	Lower TL Half-Flit	Lower TL Half-Flit
+	15	14	13	12	11	10	9	8	7	6	5	4	3	2	1	0
+Flit																
+0	Req0.Data.0	Req0.Data.0	Req0.Data.0	Req0.Data.0	Req0.Data.0	Req0.Data.0	Req0.Data.0	Req0.Data.0	Req0 (WriteFull)	Req0 (WriteFull)	Req0 (WriteFull)	Req0 (WriteFull)	WrRspA	WrRspA	NOP	FC
+1	Req0.Data.2	Req0.Data.2	Req0.Data.2	Req0.Data.2	Req0.Data.2	Req0.Data.2	Req0.Data.2	Req0.Data.2	Req0.Data.1	Req0.Data.1	Req0.Data.1	Req0.Data.1	Req0.Data.1	Req0.Data.1	Req0.Data.1	Req0.Data.1
+2	Req0.Data.4	Req0.Data.4	Req0.Data.4	Req0.Data.4	Req0.Data.4	Req0.Data.4	Req0.Data.4	Req0.Data.4	Req0.Data.3	Req0.Data.3	Req0.Data.3	Req0.Data.3	Req0.Data.3	Req0.Data.3	Req0.Data.3	Req0.Data.3
+3	Req0.Data.6	Req0.Data.6	Req0.Data.6	Req0.Data.6	Req0.Data.6	Req0.Data.6	Req0.Data.6	Req0.Data.6	Req0.Data.5	Req0.Data.5	Req0.Data.5	Req0.Data.5	Req0.Data.5	Req0.Data.5	Req0.Data.5	Req0.Data.5
+4	Req0.Data.7	Req0.Data.7	Req0.Data.7	Req0.Data.7	Req0.Data.7	Req0.Data.7	Req0.Data.7	Req0.Data.7	Req1 (Write Full)	Req1 (Write Full)	Req1 (Write Full)	Req1 (Write Full)	WrRspB	WrRspB	NOP	FC
+5	Req1.Data.1	Req1.Data.1	Req1.Data.1	Req1.Data.1	Req1.Data.1	Req1.Data.1	Req1.Data.1	Req1.Data.1	Req1.Data.0	Req1.Data.0	Req1.Data.0	Req1.Data.0	Req1.Data.0	Req1.Data.0	Req1.Data.0	Req1.Data.0
+6	Req1.Data.3	Req1.Data.3	Req1.Data.3	Req1.Data.3	Req1.Data.3	Req1.Data.3	Req1.Data.3	Req1.Data.3	Req1.Data.2	Req1.Data.2	Req1.Data.2	Req1.Data.2	Req1.Data.2	Req1.Data.2	Req1.Data.2	Req1.Data.2
+7	Req1.Data.5	Req1.Data.5	Req1.Data.5	Req1.Data.5	Req1.Data.5	Req1.Data.5	Req1.Data.5	Req1.Data.5	Req1.Data.4	Req1.Data.4	Req1.Data.4	Req1.Data.4	Req1.Data.4	Req1.Data.4	Req1.Data.4	Req1.Data.4
+8	Req1.Data.7	Req1.Data.7	Req1.Data.7	Req1.Data.7	Req1.Data.7	Req1.Data.7	Req1.Data.7	Req1.Data.7	Req1.Data.6	Req1.Data.6	Req1.Data.6	Req1.Data.6	Req1.Data.6	Req1.Data.6	Req1.Data.6	Req1.Data.6
+
+=== TABLE 41 ===
+	64-byte TL Flit	64-byte TL Flit	64-byte TL Flit	64-byte TL Flit	64-byte TL Flit	64-byte TL Flit	64-byte TL Flit	64-byte TL Flit	64-byte TL Flit	64-byte TL Flit	64-byte TL Flit	64-byte TL Flit	64-byte TL Flit	64-byte TL Flit	64-byte TL Flit	64-byte TL Flit
+	Upper TL Half-Flit	Upper TL Half-Flit	Upper TL Half-Flit	Upper TL Half-Flit	Upper TL Half-Flit	Upper TL Half-Flit	Upper TL Half-Flit	Upper TL Half-Flit	Lower TL Half-Flit	Lower TL Half-Flit	Lower TL Half-Flit	Lower TL Half-Flit	Lower TL Half-Flit	Lower TL Half-Flit	Lower TL Half-Flit	Lower TL Half-Flit
+	15	14	13	12	11	10	9	8	7	6	5	4	3	2	1	0
+Flit																
+0	Req0.Data.0	Req0.Data.0	Req0.Data.0	Req0.Data.0	Req0.Data.0	Req0.Data.0	Req0.Data.0	Req0.Data.0	Req1 (WriteFull)	Req1 (WriteFull)	Req1 (WriteFull)	Req1 (WriteFull)	Req0 (WriteFull)	Req0 (WriteFull)	Req0 (WriteFull)	Req0 (WriteFull)
+1	Req0.Data.2	Req0.Data.2	Req0.Data.2	Req0.Data.2	Req0.Data.2	Req0.Data.2	Req0.Data.2	Req0.Data.2	Req0.Data.1	Req0.Data.1	Req0.Data.1	Req0.Data.1	Req0.Data.1	Req0.Data.1	Req0.Data.1	Req0.Data.1
+2	Req0.Data.4	Req0.Data.4	Req0.Data.4	Req0.Data.4	Req0.Data.4	Req0.Data.4	Req0.Data.4	Req0.Data.4	Req0.Data.3	Req0.Data.3	Req0.Data.3	Req0.Data.3	Req0.Data.3	Req0.Data.3	Req0.Data.3	Req0.Data.3
+3	Req0.Data.6	Req0.Data.6	Req0.Data.6	Req0.Data.6	Req0.Data.6	Req0.Data.6	Req0.Data.6	Req0.Data.6	Req0.Data.5	Req0.Data.5	Req0.Data.5	Req0.Data.5	Req0.Data.5	Req0.Data.5	Req0.Data.5	Req0.Data.5
+4	Req1.Data.0	Req1.Data.0	Req1.Data.0	Req1.Data.0	Req1.Data.0	Req1.Data.0	Req1.Data.0	Req1.Data.0	Req0.Data.7	Req0.Data.7	Req0.Data.7	Req0.Data.7	Req0.Data.7	Req0.Data.7	Req0.Data.7	Req0.Data.7
+5	Req1.Data.2	Req1.Data.2	Req1.Data.2	Req1.Data.2	Req1.Data.2	Req1.Data.2	Req1.Data.2	Req1.Data.2	Req1.Data.1	Req1.Data.1	Req1.Data.1	Req1.Data.1	Req1.Data.1	Req1.Data.1	Req1.Data.1	Req1.Data.1
+6	Req1.Data.4	Req1.Data.4	Req1.Data.4	Req1.Data.4	Req1.Data.4	Req1.Data.4	Req1.Data.4	Req1.Data.4	Req1.Data.3	Req1.Data.3	Req1.Data.3	Req1.Data.3	Req1.Data.3	Req1.Data.3	Req1.Data.3	Req1.Data.3
+7	Req1.Data.6	Req1.Data.6	Req1.Data.6	Req1.Data.6	Req1.Data.6	Req1.Data.6	Req1.Data.6	Req1.Data.6	Req1.Data.5	Req1.Data.5	Req1.Data.5	Req1.Data.5	Req1.Data.5	Req1.Data.5	Req1.Data.5	Req1.Data.5
+8	Req1.Data.7	Req1.Data.7	Req1.Data.7	Req1.Data.7	Req1.Data.7	Req1.Data.7	Req1.Data.7	Req1.Data.7	Req2 (Write Full)	Req2 (Write Full)	Req2 (Write Full)	Req2 (Write Full)	CWR C	CWR B	CWR A	FC
+9	Req2.Data.1	Req2.Data.1	Req2.Data.1	Req2.Data.1	Req2.Data.1	Req2.Data.1	Req2.Data.1	Req2.Data.1	Req2.Data.0	Req2.Data.0	Req2.Data.0	Req2.Data.0	Req2.Data.0	Req2.Data.0	Req2.Data.0	Req2.Data.0
+10	Req2.Data.3	Req2.Data.3	Req2.Data.3	Req2.Data.3	Req2.Data.3	Req2.Data.3	Req2.Data.3	Req2.Data.3	Req2.Data.2	Req2.Data.2	Req2.Data.2	Req2.Data.2	Req2.Data.2	Req2.Data.2	Req2.Data.2	Req2.Data.2
+11	Req2.Data.5	Req2.Data.5	Req2.Data.5	Req2.Data.5	Req2.Data.5	Req2.Data.5	Req2.Data.5	Req2.Data.5	Req2.Data.4	Req2.Data.4	Req2.Data.4	Req2.Data.4	Req2.Data.4	Req2.Data.4	Req2.Data.4	Req2.Data.4
+12	Req2.Data.7	Req2.Data.7	Req2.Data.7	Req2.Data.7	Req2.Data.7	Req2.Data.7	Req2.Data.7	Req2.Data.7	Req2.Data.6	Req2.Data.6	Req2.Data.6	Req2.Data.6	Req2.Data.6	Req2.Data.6	Req2.Data.6	Req2.Data.6
+
+=== TABLE 42 ===
+	64-byte TL Flit	64-byte TL Flit	64-byte TL Flit	64-byte TL Flit	64-byte TL Flit	64-byte TL Flit	64-byte TL Flit	64-byte TL Flit	64-byte TL Flit	64-byte TL Flit	64-byte TL Flit	64-byte TL Flit	64-byte TL Flit	64-byte TL Flit	64-byte TL Flit	64-byte TL Flit
+	Upper TL Half-Flit	Upper TL Half-Flit	Upper TL Half-Flit	Upper TL Half-Flit	Upper TL Half-Flit	Upper TL Half-Flit	Upper TL Half-Flit	Upper TL Half-Flit	Lower TL Half-Flit	Lower TL Half-Flit	Lower TL Half-Flit	Lower TL Half-Flit	Lower TL Half-Flit	Lower TL Half-Flit	Lower TL Half-Flit	Lower TL Half-Flit
+	15	14	13	12	11	10	9	8	7	6	5	4	3	2	1	0
+Flit																
+0	Req0.Data.0	Req0.Data.0	Req0.Data.0	Req0.Data.0	Req0.Data.0	Req0.Data.0	Req0.Data.0	Req0.Data.0	CWReq1	CWReq1	CWReq0	CWReq0	CWR B	CWR A	NOP	FC
+1	Req0.Data.2	Req0.Data.2	Req0.Data.2	Req0.Data.2	Req0.Data.2	Req0.Data.2	Req0.Data.2	Req0.Data.2	Req0.Data.1	Req0.Data.1	Req0.Data.1	Req0.Data.1	Req0.Data.1	Req0.Data.1	Req0.Data.1	Req0.Data.1
+2	Req0.Data.4	Req0.Data.4	Req0.Data.4	Req0.Data.4	Req0.Data.4	Req0.Data.4	Req0.Data.4	Req0.Data.4	Req0.Data.3	Req0.Data.3	Req0.Data.3	Req0.Data.3	Req0.Data.3	Req0.Data.3	Req0.Data.3	Req0.Data.3
+3	Req0.Data.6	Req0.Data.6	Req0.Data.6	Req0.Data.6	Req0.Data.6	Req0.Data.6	Req0.Data.6	Req0.Data.6	Req0.Data.5	Req0.Data.5	Req0.Data.5	Req0.Data.5	Req0.Data.5	Req0.Data.5	Req0.Data.5	Req0.Data.5
+4	Req1.Data.0	Req1.Data.0	Req1.Data.0	Req1.Data.0	Req1.Data.0	Req1.Data.0	Req1.Data.0	Req1.Data.0	Req0.Data.7	Req0.Data.7	Req0.Data.7	Req0.Data.7	Req0.Data.7	Req0.Data.7	Req0.Data.7	Req0.Data.7
+5	Req1.Data.2	Req1.Data.2	Req1.Data.2	Req1.Data.2	Req1.Data.2	Req1.Data.2	Req1.Data.2	Req1.Data.2	Req1.Data.1	Req1.Data.1	Req1.Data.1	Req1.Data.1	Req1.Data.1	Req1.Data.1	Req1.Data.1	Req1.Data.1
+6	Req1.Data.4	Req1.Data.4	Req1.Data.4	Req1.Data.4	Req1.Data.4	Req1.Data.4	Req1.Data.4	Req1.Data.4	Req1.Data.3	Req1.Data.3	Req1.Data.3	Req1.Data.3	Req1.Data.3	Req1.Data.3	Req1.Data.3	Req1.Data.3
+7	Req1.Data.6	Req1.Data.6	Req1.Data.6	Req1.Data.6	Req1.Data.6	Req1.Data.6	Req1.Data.6	Req1.Data.6	Req1.Data.5	Req1.Data.5	Req1.Data.5	Req1.Data.5	Req1.Data.5	Req1.Data.5	Req1.Data.5	Req1.Data.5
+8	Req1.Data.7	Req1.Data.7	Req1.Data.7	Req1.Data.7	Req1.Data.7	Req1.Data.7	Req1.Data.7	Req1.Data.7	CWReq3	CWReq3	CWReq2	CWReq2	CWR D	CWR C	NOP	FC
+9	Req2.Data.1	Req2.Data.1	Req2.Data.1	Req2.Data.1	Req2.Data.1	Req2.Data.1	Req2.Data.1	Req2.Data.1	Req2.Data.0	Req2.Data.0	Req2.Data.0	Req2.Data.0	Req2.Data.0	Req2.Data.0	Req2.Data.0	Req2.Data.0
+10	Req2.Data.3	Req2.Data.3	Req2.Data.3	Req2.Data.3	Req2.Data.3	Req2.Data.3	Req2.Data.3	Req2.Data.3	Req2.Data.2	Req2.Data.2	Req2.Data.2	Req2.Data.2	Req2.Data.2	Req2.Data.2	Req2.Data.2	Req2.Data.2
+11	Req2.Data.5	Req2.Data.5	Req2.Data.5	Req2.Data.5	Req2.Data.5	Req2.Data.5	Req2.Data.5	Req2.Data.5	Req2.Data.4	Req2.Data.4	Req2.Data.4	Req2.Data.4	Req2.Data.4	Req2.Data.4	Req2.Data.4	Req2.Data.4
+12	Req2.Data.7	Req2.Data.7	Req2.Data.7	Req2.Data.7	Req2.Data.7	Req2.Data.7	Req2.Data.7	Req2.Data.7	Req2.Data.6	Req2.Data.6	Req2.Data.6	Req2.Data.6	Req2.Data.6	Req2.Data.6	Req2.Data.6	Req2.Data.6
+13	Req3.Data.1	Req3.Data.1	Req3.Data.1	Req3.Data.1	Req3.Data.1	Req3.Data.1	Req3.Data.1	Req3.Data.1	Req3.Data.0	Req3.Data.0	Req3.Data.0	Req3.Data.0	Req3.Data.0	Req3.Data.0	Req3.Data.0	Req3.Data.0
+14	Req3.Data.3	Req3.Data.3	Req3.Data.3	Req3.Data.3	Req3.Data.3	Req3.Data.3	Req3.Data.3	Req3.Data.3	Req2.Data.2	Req2.Data.2	Req2.Data.2	Req2.Data.2	Req2.Data.2	Req2.Data.2	Req2.Data.2	Req2.Data.2
+15	Req3.Data.5	Req3.Data.5	Req3.Data.5	Req3.Data.5	Req3.Data.5	Req3.Data.5	Req3.Data.5	Req3.Data.5	Req3.Data.4	Req3.Data.4	Req3.Data.4	Req3.Data.4	Req3.Data.4	Req3.Data.4	Req3.Data.4	Req3.Data.4
+16	Req3.Data.7	Req3.Data.7	Req3.Data.7	Req3.Data.7	Req3.Data.7	Req3.Data.7	Req3.Data.7	Req3.Data.7	Req3.Data6	Req3.Data6	Req3.Data6	Req3.Data6	Req3.Data6	Req3.Data6	Req3.Data6	Req3.Data6
+
+=== TABLE 43 ===
+	64-byte TL Flit	64-byte TL Flit	64-byte TL Flit	64-byte TL Flit	64-byte TL Flit	64-byte TL Flit	64-byte TL Flit	64-byte TL Flit	64-byte TL Flit	64-byte TL Flit	64-byte TL Flit	64-byte TL Flit	64-byte TL Flit	64-byte TL Flit	64-byte TL Flit	64-byte TL Flit
+	Upper TL Half-Flit	Upper TL Half-Flit	Upper TL Half-Flit	Upper TL Half-Flit	Upper TL Half-Flit	Upper TL Half-Flit	Upper TL Half-Flit	Upper TL Half-Flit	Lower TL Half-Flit	Lower TL Half-Flit	Lower TL Half-Flit	Lower TL Half-Flit	Lower TL Half-Flit	Lower TL Half-Flit	Lower TL Half-Flit	Lower TL Half-Flit
+	15	14	13	12	11	10	9	8	7	6	5	4	3	2	1	0
+Flit																
+0	Req0.Data.0	Req0.Data.0	Req0.Data.0	Req0.Data.0	Req0.Data.0	Req0.Data.0	Req0.Data.0	Req0.Data.0	CWReq2	CWReq2	CWReq1	CWReq1	CWR B	CWR A	CWReq0	CWReq0
+1	Req0.Data.2	Req0.Data.2	Req0.Data.2	Req0.Data.2	Req0.Data.2	Req0.Data.2	Req0.Data.2	Req0.Data.2	Req0.Data.1	Req0.Data.1	Req0.Data.1	Req0.Data.1	Req0.Data.1	Req0.Data.1	Req0.Data.1	Req0.Data.1
+2	Req0.Data.4	Req0.Data.4	Req0.Data.4	Req0.Data.4	Req0.Data.4	Req0.Data.4	Req0.Data.4	Req0.Data.4	Req0.Data.3	Req0.Data.3	Req0.Data.3	Req0.Data.3	Req0.Data.3	Req0.Data.3	Req0.Data.3	Req0.Data.3
+3	Req0.Data.6	Req0.Data.6	Req0.Data.6	Req0.Data.6	Req0.Data.6	Req0.Data.6	Req0.Data.6	Req0.Data.6	Req0.Data.5	Req0.Data.5	Req0.Data.5	Req0.Data.5	Req0.Data.5	Req0.Data.5	Req0.Data.5	Req0.Data.5
+4	Req1.Data.0	Req1.Data.0	Req1.Data.0	Req1.Data.0	Req1.Data.0	Req1.Data.0	Req1.Data.0	Req1.Data.0	Req0.Data.7	Req0.Data.7	Req0.Data.7	Req0.Data.7	Req0.Data.7	Req0.Data.7	Req0.Data.7	Req0.Data.7
+5	Req1.Data.2	Req1.Data.2	Req1.Data.2	Req1.Data.2	Req1.Data.2	Req1.Data.2	Req1.Data.2	Req1.Data.2	Req1.Data.1	Req1.Data.1	Req1.Data.1	Req1.Data.1	Req1.Data.1	Req1.Data.1	Req1.Data.1	Req1.Data.1
+6	Req1.Data.4	Req1.Data.4	Req1.Data.4	Req1.Data.4	Req1.Data.4	Req1.Data.4	Req1.Data.4	Req1.Data.4	Req1.Data.3	Req1.Data.3	Req1.Data.3	Req1.Data.3	Req1.Data.3	Req1.Data.3	Req1.Data.3	Req1.Data.3
+7	Req1.Data.6	Req1.Data.6	Req1.Data.6	Req1.Data.6	Req1.Data.6	Req1.Data.6	Req1.Data.6	Req1.Data.6	Req1.Data.5	Req1.Data.5	Req1.Data.5	Req1.Data.5	Req1.Data.5	Req1.Data.5	Req1.Data.5	Req1.Data.5
+8	Req2.Data.0	Req2.Data.0	Req2.Data.0	Req2.Data.0	Req2.Data.0	Req2.Data.0	Req2.Data.0	Req2.Data.0	Req1.Data.7	Req1.Data.7	Req1.Data.7	Req1.Data.7	Req1.Data.7	Req1.Data.7	Req1.Data.7	Req1.Data.7
+9	Req2.Data.2	Req2.Data.2	Req2.Data.2	Req2.Data.2	Req2.Data.2	Req2.Data.2	Req2.Data.2	Req2.Data.2	Req2.Data.1	Req2.Data.1	Req2.Data.1	Req2.Data.1	Req2.Data.1	Req2.Data.1	Req2.Data.1	Req2.Data.1
+10	Req2.Data.4	Req2.Data.4	Req2.Data.4	Req2.Data.4	Req2.Data.4	Req2.Data.4	Req2.Data.4	Req2.Data.4	Req2.Data.3	Req2.Data.3	Req2.Data.3	Req2.Data.3	Req2.Data.3	Req2.Data.3	Req2.Data.3	Req2.Data.3
+11	Req2.Data.6	Req2.Data.6	Req2.Data.6	Req2.Data.6	Req2.Data.6	Req2.Data.6	Req2.Data.6	Req2.Data.6	Req2.Data.5	Req2.Data.5	Req2.Data.5	Req2.Data.5	Req2.Data.5	Req2.Data.5	Req2.Data.5	Req2.Data.5
+12	Req2.Data.7	Req2.Data.7	Req2.Data.7	Req2.Data.7	Req2.Data.7	Req2.Data.7	Req2.Data.7	Req2.Data.7	CWReq4	CWReq4	CWReq3	CWReq3	CWR E	CWR D	CWR C	FC
+13	Req3.Data.1	Req3.Data.1	Req3.Data.1	Req3.Data.1	Req3.Data.1	Req3.Data.1	Req3.Data.1	Req3.Data.1	Req3.Data.0	Req3.Data.0	Req3.Data.0	Req3.Data.0	Req3.Data.0	Req3.Data.0	Req3.Data.0	Req3.Data.0
+14	Req3.Data.3	Req3.Data.3	Req3.Data.3	Req3.Data.3	Req3.Data.3	Req3.Data.3	Req3.Data.3	Req3.Data.3	Req3.Data.2	Req3.Data.2	Req3.Data.2	Req3.Data.2	Req3.Data.2	Req3.Data.2	Req3.Data.2	Req3.Data.2
+15	Req3.Data.5	Req3.Data.5	Req3.Data.5	Req3.Data.5	Req3.Data.5	Req3.Data.5	Req3.Data.5	Req3.Data.5	Req3.Data.4	Req3.Data.4	Req3.Data.4	Req3.Data.4	Req3.Data.4	Req3.Data.4	Req3.Data.4	Req3.Data.4
+16	Req3.Data.7	Req3.Data.7	Req3.Data.7	Req3.Data.7	Req3.Data.7	Req3.Data.7	Req3.Data.7	Req3.Data.7	Req3.Data.6	Req3.Data.6	Req3.Data.6	Req3.Data.6	Req3.Data.6	Req3.Data.6	Req3.Data.6	Req3.Data.6
+17	Req4.Data.1	Req4.Data.1	Req4.Data.1	Req4.Data.1	Req4.Data.1	Req4.Data.1	Req4.Data.1	Req4.Data.1	Req4.Data.0	Req4.Data.0	Req4.Data.0	Req4.Data.0	Req4.Data.0	Req4.Data.0	Req4.Data.0	Req4.Data.0
+18	Req4.Data.3	Req4.Data.3	Req4.Data.3	Req4.Data.3	Req4.Data.3	Req4.Data.3	Req4.Data.3	Req4.Data.3	Req4.Data.2	Req4.Data.2	Req4.Data.2	Req4.Data.2	Req4.Data.2	Req4.Data.2	Req4.Data.2	Req4.Data.2
+19	Req4.Data.5	Req4.Data.5	Req4.Data.5	Req4.Data.5	Req4.Data.5	Req4.Data.5	Req4.Data.5	Req4.Data.5	Req4.Data.4	Req4.Data.4	Req4.Data.4	Req4.Data.4	Req4.Data.4	Req4.Data.4	Req4.Data.4	Req4.Data.4
+20	Req4.Data.7	Req4.Data.7	Req4.Data.7	Req4.Data.7	Req4.Data.7	Req4.Data.7	Req4.Data.7	Req4.Data.7	Req4.Data6	Req4.Data6	Req4.Data6	Req4.Data6	Req4.Data6	Req4.Data6	Req4.Data6	Req4.Data6
+
+=== TABLE 44 ===
+	64-byte TL Flit	64-byte TL Flit	64-byte TL Flit	64-byte TL Flit	64-byte TL Flit	64-byte TL Flit	64-byte TL Flit	64-byte TL Flit	64-byte TL Flit	64-byte TL Flit	64-byte TL Flit	64-byte TL Flit	64-byte TL Flit	64-byte TL Flit	64-byte TL Flit	64-byte TL Flit
+	Upper TL Half-Flit	Upper TL Half-Flit	Upper TL Half-Flit	Upper TL Half-Flit	Upper TL Half-Flit	Upper TL Half-Flit	Upper TL Half-Flit	Upper TL Half-Flit	Lower TL Half-Flit	Lower TL Half-Flit	Lower TL Half-Flit	Lower TL Half-Flit	Lower TL Half-Flit	Lower TL Half-Flit	Lower TL Half-Flit	Lower TL Half-Flit
+	15	14	13	12	11	10	9	8	7	6	5	4	3	2	1	0
+Flit																
+0	AuthTag1	AuthTag1	AuthTag0	AuthTag0	AuthTagB	AuthTagB	AuthTagA	AuthTagA	CWReq1	CWReq1	CWReq0	CWReq0	CWR B	CWR A	NOP	FC
+1	Req0.Data.1	Req0.Data.1	Req0.Data.1	Req0.Data.1	Req0.Data.1	Req0.Data.1	Req0.Data.1	Req0.Data.1	Req0.Data.0	Req0.Data.0	Req0.Data.0	Req0.Data.0	Req0.Data.0	Req0.Data.0	Req0.Data.0	Req0.Data.0
+2	Req0.Data.3	Req0.Data.3	Req0.Data.3	Req0.Data.3	Req0.Data.3	Req0.Data.3	Req0.Data.3	Req0.Data.3	Req0.Data.2	Req0.Data.2	Req0.Data.2	Req0.Data.2	Req0.Data.2	Req0.Data.2	Req0.Data.2	Req0.Data.2
+3	Req0.Data.5	Req0.Data.5	Req0.Data.5	Req0.Data.5	Req0.Data.5	Req0.Data.5	Req0.Data.5	Req0.Data.5	Req0.Data.4	Req0.Data.4	Req0.Data.4	Req0.Data.4	Req0.Data.4	Req0.Data.4	Req0.Data.4	Req0.Data.4
+4	Req0.Data.7	Req0.Data.7	Req0.Data.7	Req0.Data.7	Req0.Data.7	Req0.Data.7	Req0.Data.7	Req0.Data.7	Req0.Data.6	Req0.Data.6	Req0.Data.6	Req0.Data.6	Req0.Data.6	Req0.Data.6	Req0.Data.6	Req0.Data.6
+5	Req1.Data.1	Req1.Data.1	Req1.Data.1	Req1.Data.1	Req1.Data.1	Req1.Data.1	Req1.Data.1	Req1.Data.1	Req1.Data.0	Req1.Data.0	Req1.Data.0	Req1.Data.0	Req1.Data.0	Req1.Data.0	Req1.Data.0	Req1.Data.0
+6	Req1.Data.3	Req1.Data.3	Req1.Data.3	Req1.Data.3	Req1.Data.3	Req1.Data.3	Req1.Data.3	Req1.Data.3	Req1.Data.2	Req1.Data.2	Req1.Data.2	Req1.Data.2	Req1.Data.2	Req1.Data.2	Req1.Data.2	Req1.Data.2
+7	Req1.Data.5	Req1.Data.5	Req1.Data.5	Req1.Data.5	Req1.Data.5	Req1.Data.5	Req1.Data.5	Req1.Data.5	Req1.Data.4	Req1.Data.4	Req1.Data.4	Req1.Data.4	Req1.Data.4	Req1.Data.4	Req1.Data.4	Req1.Data.4
+8	Req1.Data.7	Req1.Data.7	Req1.Data.7	Req1.Data.7	Req1.Data.7	Req1.Data.7	Req1.Data.7	Req1.Data.7	Req1.Data.6	Req1.Data.6	Req1.Data.6	Req1.Data.6	Req1.Data.6	Req1.Data.6	Req1.Data.6	Req1.Data.6
+
+=== TABLE 45 ===
+	64-byte TL Flit	64-byte TL Flit	64-byte TL Flit	64-byte TL Flit	64-byte TL Flit	64-byte TL Flit	64-byte TL Flit	64-byte TL Flit	64-byte TL Flit	64-byte TL Flit	64-byte TL Flit	64-byte TL Flit	64-byte TL Flit	64-byte TL Flit	64-byte TL Flit	64-byte TL Flit
+	Upper TL Half-Flit	Upper TL Half-Flit	Upper TL Half-Flit	Upper TL Half-Flit	Upper TL Half-Flit	Upper TL Half-Flit	Upper TL Half-Flit	Upper TL Half-Flit	Lower TL Half-Flit	Lower TL Half-Flit	Lower TL Half-Flit	Lower TL Half-Flit	Lower TL Half-Flit	Lower TL Half-Flit	Lower TL Half-Flit	Lower TL Half-Flit
+	15	14	13	12	11	10	9	8	7	6	5	4	3	2	1	0
+Flit																
+0	Rsp0.Data.0	Rsp0.Data.0	Rsp0.Data.0	Rsp0.Data.0	Rsp0.Data.0	Rsp0.Data.0	Rsp0.Data.0	Rsp0.Data.0	CRReqB	CRReqB	CRReqA	CRReqA	CRR 2	CRR 1	CRR 0	FC
+1	Rsp0.Data.2	Rsp0.Data.2	Rsp0.Data.2	Rsp0.Data.2	Rsp0.Data.2	Rsp0.Data.2	Rsp0.Data.2	Rsp0.Data.2	Rsp0.Data.1	Rsp0.Data.1	Rsp0.Data.1	Rsp0.Data.1	Rsp0.Data.1	Rsp0.Data.1	Rsp0.Data.1	Rsp0.Data.1
+2	Rsp0.Data.4	Rsp0.Data.4	Rsp0.Data.4	Rsp0.Data.4	Rsp0.Data.4	Rsp0.Data.4	Rsp0.Data.4	Rsp0.Data.4	Rsp0.Data.3	Rsp0.Data.3	Rsp0.Data.3	Rsp0.Data.3	Rsp0.Data.3	Rsp0.Data.3	Rsp0.Data.3	Rsp0.Data.3
+3	Rsp0.Data.6	Rsp0.Data.6	Rsp0.Data.6	Rsp0.Data.6	Rsp0.Data.6	Rsp0.Data.6	Rsp0.Data.6	Rsp0.Data.6	Rsp0.Data.5	Rsp0.Data.5	Rsp0.Data.5	Rsp0.Data.5	Rsp0.Data.5	Rsp0.Data.5	Rsp0.Data.5	Rsp0.Data.5
+4	Rsp1.Data.0	Rsp1.Data.0	Rsp1.Data.0	Rsp1.Data.0	Rsp1.Data.0	Rsp1.Data.0	Rsp1.Data.0	Rsp1.Data.0	Rsp0.Data.7	Rsp0.Data.7	Rsp0.Data.7	Rsp0.Data.7	Rsp0.Data.7	Rsp0.Data.7	Rsp0.Data.7	Rsp0.Data.7
+5	Rsp1.Data.2	Rsp1.Data.2	Rsp1.Data.2	Rsp1.Data.2	Rsp1.Data.2	Rsp1.Data.2	Rsp1.Data.2	Rsp1.Data.2	Rsp1.Data.1	Rsp1.Data.1	Rsp1.Data.1	Rsp1.Data.1	Rsp1.Data.1	Rsp1.Data.1	Rsp1.Data.1	Rsp1.Data.1
+6	Rsp1.Data.4	Rsp1.Data.4	Rsp1.Data.4	Rsp1.Data.4	Rsp1.Data.4	Rsp1.Data.4	Rsp1.Data.4	Rsp1.Data.4	Rsp1.Data.3	Rsp1.Data.3	Rsp1.Data.3	Rsp1.Data.3	Rsp1.Data.3	Rsp1.Data.3	Rsp1.Data.3	Rsp1.Data.3
+7	Rsp1.Data.6	Rsp1.Data.6	Rsp1.Data.6	Rsp1.Data.6	Rsp1.Data.6	Rsp1.Data.6	Rsp1.Data.6	Rsp1.Data.6	Rsp1.Data.5	Rsp1.Data.5	Rsp1.Data.5	Rsp1.Data.5	Rsp1.Data.5	Rsp1.Data.5	Rsp1.Data.5	Rsp1.Data.5
+8	Rsp2.Data.0	Rsp2.Data.0	Rsp2.Data.0	Rsp2.Data.0	Rsp2.Data.0	Rsp2.Data.0	Rsp2.Data.0	Rsp2.Data.0	Rsp1.Data.7	Rsp1.Data.7	Rsp1.Data.7	Rsp1.Data.7	Rsp1.Data.7	Rsp1.Data.7	Rsp1.Data.7	Rsp1.Data.7
+9	Rsp2.Data.2	Rsp2.Data.2	Rsp2.Data.2	Rsp2.Data.2	Rsp2.Data.2	Rsp2.Data.2	Rsp2.Data.2	Rsp2.Data.2	Rsp2.Data.1	Rsp2.Data.1	Rsp2.Data.1	Rsp2.Data.1	Rsp2.Data.1	Rsp2.Data.1	Rsp2.Data.1	Rsp2.Data.1
+10	Rsp2.Data.4	Rsp2.Data.4	Rsp2.Data.4	Rsp2.Data.4	Rsp2.Data.4	Rsp2.Data.4	Rsp2.Data.4	Rsp2.Data.4	Rsp2.Data.3	Rsp2.Data.3	Rsp2.Data.3	Rsp2.Data.3	Rsp2.Data.3	Rsp2.Data.3	Rsp2.Data.3	Rsp2.Data.3
+11	Rsp2.Data.6	Rsp2.Data.6	Rsp2.Data.6	Rsp2.Data.6	Rsp2.Data.6	Rsp2.Data.6	Rsp2.Data.6	Rsp2.Data.6	Rsp2.Data.5	Rsp2.Data.5	Rsp2.Data.5	Rsp2.Data.5	Rsp2.Data.5	Rsp2.Data.5	Rsp2.Data.5	Rsp2.Data.5
+12	Rsp2.Data.7	Rsp2.Data.7	Rsp2.Data.7	Rsp2.Data.7	Rsp2.Data.7	Rsp2.Data.7	Rsp2.Data.7	Rsp2.Data.7	CRReqE	CRReqE	CRReqD	CRReqD	CRR 4	CRR 3	CRReqC	CRReqC
+13	Rsp3.Data.1	Rsp3.Data.1	Rsp3.Data.1	Rsp3.Data.1	Rsp3.Data.1	Rsp3.Data.1	Rsp3.Data.1	Rsp3.Data.1	Rsp3.Data.0	Rsp3.Data.0	Rsp3.Data.0	Rsp3.Data.0	Rsp3.Data.0	Rsp3.Data.0	Rsp3.Data.0	Rsp3.Data.0
+14	Rsp3.Data.3	Rsp3.Data.3	Rsp3.Data.3	Rsp3.Data.3	Rsp3.Data.3	Rsp3.Data.3	Rsp3.Data.3	Rsp3.Data.3	Rsp3.Data.2	Rsp3.Data.2	Rsp3.Data.2	Rsp3.Data.2	Rsp3.Data.2	Rsp3.Data.2	Rsp3.Data.2	Rsp3.Data.2
+15	Rsp3.Data.5	Rsp3.Data.5	Rsp3.Data.5	Rsp3.Data.5	Rsp3.Data.5	Rsp3.Data.5	Rsp3.Data.5	Rsp3.Data.5	Rsp3.Data.4	Rsp3.Data.4	Rsp3.Data.4	Rsp3.Data.4	Rsp3.Data.4	Rsp3.Data.4	Rsp3.Data.4	Rsp3.Data.4
+16	Rsp3.Data.7	Rsp3.Data.7	Rsp3.Data.7	Rsp3.Data.7	Rsp3.Data.7	Rsp3.Data.7	Rsp3.Data.7	Rsp3.Data.7	Rsp3.Data.6	Rsp3.Data.6	Rsp3.Data.6	Rsp3.Data.6	Rsp3.Data.6	Rsp3.Data.6	Rsp3.Data.6	Rsp3.Data.6
+17	Rsp4.Data.1	Rsp4.Data.1	Rsp4.Data.1	Rsp4.Data.1	Rsp4.Data.1	Rsp4.Data.1	Rsp4.Data.1	Rsp4.Data.1	Rsp4.Data.0	Rsp4.Data.0	Rsp4.Data.0	Rsp4.Data.0	Rsp4.Data.0	Rsp4.Data.0	Rsp4.Data.0	Rsp4.Data.0
+18	Rsp4.Data.3	Rsp4.Data.3	Rsp4.Data.3	Rsp4.Data.3	Rsp4.Data.3	Rsp4.Data.3	Rsp4.Data.3	Rsp4.Data.3	Rsp4.Data.2	Rsp4.Data.2	Rsp4.Data.2	Rsp4.Data.2	Rsp4.Data.2	Rsp4.Data.2	Rsp4.Data.2	Rsp4.Data.2
+19	Rsp4.Data.5	Rsp4.Data.5	Rsp4.Data.5	Rsp4.Data.5	Rsp4.Data.5	Rsp4.Data.5	Rsp4.Data.5	Rsp4.Data.5	Rsp4.Data.4	Rsp4.Data.4	Rsp4.Data.4	Rsp4.Data.4	Rsp4.Data.4	Rsp4.Data.4	Rsp4.Data.4	Rsp4.Data.4
+20	Rsp4.Data.7	Rsp4.Data.7	Rsp4.Data.7	Rsp4.Data.7	Rsp4.Data.7	Rsp4.Data.7	Rsp4.Data.7	Rsp4.Data.7	Rsp4.Data6	Rsp4.Data6	Rsp4.Data6	Rsp4.Data6	Rsp4.Data6	Rsp4.Data6	Rsp4.Data6	Rsp4.Data6
+
+=== TABLE 46 ===
+	64-byte TL Flit	64-byte TL Flit	64-byte TL Flit	64-byte TL Flit	64-byte TL Flit	64-byte TL Flit	64-byte TL Flit	64-byte TL Flit	64-byte TL Flit	64-byte TL Flit	64-byte TL Flit	64-byte TL Flit	64-byte TL Flit	64-byte TL Flit	64-byte TL Flit	64-byte TL Flit
+	Upper TL Half-Flit	Upper TL Half-Flit	Upper TL Half-Flit	Upper TL Half-Flit	Upper TL Half-Flit	Upper TL Half-Flit	Upper TL Half-Flit	Upper TL Half-Flit	Lower TL Half-Flit	Lower TL Half-Flit	Lower TL Half-Flit	Lower TL Half-Flit	Lower TL Half-Flit	Lower TL Half-Flit	Lower TL Half-Flit	Lower TL Half-Flit
+	15	14	13	12	11	10	9	8	7	6	5	4	3	2	1	0
+Flit																
+0	AuthTag1	AuthTag1	AuthTag0	AuthTag0	AuthTagB	AuthTagB	AuthTagA	AuthTagA	CRReqB	CRReqB	CRReqA	CRReqA	CRR 1	CRR 0	NOP	FC
+1	Rsp0.Data.1	Rsp0.Data.1	Rsp0.Data.1	Rsp0.Data.1	Rsp0.Data.1	Rsp0.Data.1	Rsp0.Data.1	Rsp0.Data.1	Rsp0.Data.0	Rsp0.Data.0	Rsp0.Data.0	Rsp0.Data.0	Rsp0.Data.0	Rsp0.Data.0	Rsp0.Data.0	Rsp0.Data.0
+2	Rsp0.Data.3	Rsp0.Data.3	Rsp0.Data.3	Rsp0.Data.3	Rsp0.Data.3	Rsp0.Data.3	Rsp0.Data.3	Rsp0.Data.3	Rsp0.Data.2	Rsp0.Data.2	Rsp0.Data.2	Rsp0.Data.2	Rsp0.Data.2	Rsp0.Data.2	Rsp0.Data.2	Rsp0.Data.2
+3	Rsp0.Data.5	Rsp0.Data.5	Rsp0.Data.5	Rsp0.Data.5	Rsp0.Data.5	Rsp0.Data.5	Rsp0.Data.5	Rsp0.Data.5	Rsp0.Data.4	Rsp0.Data.4	Rsp0.Data.4	Rsp0.Data.4	Rsp0.Data.4	Rsp0.Data.4	Rsp0.Data.4	Rsp0.Data.4
+4	Rsp0.Data.7	Rsp0.Data.7	Rsp0.Data.7	Rsp0.Data.7	Rsp0.Data.7	Rsp0.Data.7	Rsp0.Data.7	Rsp0.Data.7	Rsp0.Data.6	Rsp0.Data.6	Rsp0.Data.6	Rsp0.Data.6	Rsp0.Data.6	Rsp0.Data.6	Rsp0.Data.6	Rsp0.Data.6
+5	Rsp1.Data.1	Rsp1.Data.1	Rsp1.Data.1	Rsp1.Data.1	Rsp1.Data.1	Rsp1.Data.1	Rsp1.Data.1	Rsp1.Data.1	Rsp1.Data.0	Rsp1.Data.0	Rsp1.Data.0	Rsp1.Data.0	Rsp1.Data.0	Rsp1.Data.0	Rsp1.Data.0	Rsp1.Data.0
+6	Rsp1.Data.3	Rsp1.Data.3	Rsp1.Data.3	Rsp1.Data.3	Rsp1.Data.3	Rsp1.Data.3	Rsp1.Data.3	Rsp1.Data.3	Rsp1.Data.2	Rsp1.Data.2	Rsp1.Data.2	Rsp1.Data.2	Rsp1.Data.2	Rsp1.Data.2	Rsp1.Data.2	Rsp1.Data.2
+7	Rsp1.Data.5	Rsp1.Data.5	Rsp1.Data.5	Rsp1.Data.5	Rsp1.Data.5	Rsp1.Data.5	Rsp1.Data.5	Rsp1.Data.5	Rsp1.Data.4	Rsp1.Data.4	Rsp1.Data.4	Rsp1.Data.4	Rsp1.Data.4	Rsp1.Data.4	Rsp1.Data.4	Rsp1.Data.4
+8	Rsp1.Data.7	Rsp1.Data.7	Rsp1.Data.7	Rsp1.Data.7	Rsp1.Data.7	Rsp1.Data.7	Rsp1.Data.7	Rsp1.Data.7	Rsp1.Data.6	Rsp1.Data.6	Rsp1.Data.6	Rsp1.Data.6	Rsp1.Data.6	Rsp1.Data.6	Rsp1.Data.6	Rsp1.Data.6
+
+=== TABLE 47 ===
+	64-byte TL Flit	64-byte TL Flit	64-byte TL Flit	64-byte TL Flit	64-byte TL Flit	64-byte TL Flit	64-byte TL Flit	64-byte TL Flit	64-byte TL Flit	64-byte TL Flit	64-byte TL Flit	64-byte TL Flit	64-byte TL Flit	64-byte TL Flit	64-byte TL Flit	64-byte TL Flit
+	Upper TL Half-Flit	Upper TL Half-Flit	Upper TL Half-Flit	Upper TL Half-Flit	Upper TL Half-Flit	Upper TL Half-Flit	Upper TL Half-Flit	Upper TL Half-Flit	Lower TL Half-Flit	Lower TL Half-Flit	Lower TL Half-Flit	Lower TL Half-Flit	Lower TL Half-Flit	Lower TL Half-Flit	Lower TL Half-Flit	Lower TL Half-Flit
+	15	14	13	12	11	10	9	8	7	6	5	4	3	2	1	0
+Flit																
+0	RspA.Data.0	RspA.Data.0	RspA.Data.0	RspA.Data.0	RspA.Data.0	RspA.Data.0	RspA.Data.0	RspA.Data.0	CWrReq2	CWrReq2	CWrReq1	CWrReq1	CWr Rsp B	CRd Rsp A	CRdReq0	CRdReq0
+1	RspA.Data.2	RspA.Data.2	RspA.Data.2	RspA.Data.2	RspA.Data.2	RspA.Data.2	RspA.Data.2	RspA.Data.2	RspA.Data.1	RspA.Data.1	RspA.Data.1	RspA.Data.1	RspA.Data.1	RspA.Data.1	RspA.Data.1	RspA.Data.1
+2	RspA.Data.4	RspA.Data.4	RspA.Data.4	RspA.Data.4	RspA.Data.4	RspA.Data.4	RspA.Data.4	RspA.Data.4	RspA.Data.3	RspA.Data.3	RspA.Data.3	RspA.Data.3	RspA.Data.3	RspA.Data.3	RspA.Data.3	RspA.Data.3
+3	RspA.Data.6	RspA.Data.6	RspA.Data.6	RspA.Data.6	RspA.Data.6	RspA.Data.6	RspA.Data.6	RspA.Data.6	RspA.Data.5	RspA.Data.5	RspA.Data.5	RspA.Data.5	RspA.Data.5	RspA.Data.5	RspA.Data.5	RspA.Data.5
+4	Req1.Data.0	Req1.Data.0	Req1.Data.0	Req1.Data.0	Req1.Data.0	Req1.Data.0	Req1.Data.0	Req1.Data.0	RspA.Data.7	RspA.Data.7	RspA.Data.7	RspA.Data.7	RspA.Data.7	RspA.Data.7	RspA.Data.7	RspA.Data.7
+5	Req1.Data.2	Req1.Data.2	Req1.Data.2	Req1.Data.2	Req1.Data.2	Req1.Data.2	Req1.Data.2	Req1.Data.2	Req1.Data.1	Req1.Data.1	Req1.Data.1	Req1.Data.1	Req1.Data.1	Req1.Data.1	Req1.Data.1	Req1.Data.1
+6	Req1.Data.4	Req1.Data.4	Req1.Data.4	Req1.Data.4	Req1.Data.4	Req1.Data.4	Req1.Data.4	Req1.Data.4	Req1.Data.3	Req1.Data.3	Req1.Data.3	Req1.Data.3	Req1.Data.3	Req1.Data.3	Req1.Data.3	Req1.Data.3
+7	Req1.Data.6	Req1.Data.6	Req1.Data.6	Req1.Data.6	Req1.Data.6	Req1.Data.6	Req1.Data.6	Req1.Data.6	Req1.Data.5	Req1.Data.5	Req1.Data.5	Req1.Data.5	Req1.Data.5	Req1.Data.5	Req1.Data.5	Req1.Data.5
+8	Req2.Data.0	Req2.Data.0	Req2.Data.0	Req2.Data.0	Req2.Data.0	Req2.Data.0	Req2.Data.0	Req2.Data.0	Req1.Data.7	Req1.Data.7	Req1.Data.7	Req1.Data.7	Req1.Data.7	Req1.Data.7	Req1.Data.7	Req1.Data.7
+9	Req2.Data.2	Req2.Data.2	Req2.Data.2	Req2.Data.2	Req2.Data.2	Req2.Data.2	Req2.Data.2	Req2.Data.2	Req2.Data.1	Req2.Data.1	Req2.Data.1	Req2.Data.1	Req2.Data.1	Req2.Data.1	Req2.Data.1	Req2.Data.1
+10	Req2.Data.4	Req2.Data.4	Req2.Data.4	Req2.Data.4	Req2.Data.4	Req2.Data.4	Req2.Data.4	Req2.Data.4	Req2.Data.3	Req2.Data.3	Req2.Data.3	Req2.Data.3	Req2.Data.3	Req2.Data.3	Req2.Data.3	Req2.Data.3
+11	Req2.Data.6	Req2.Data.6	Req2.Data.6	Req2.Data.6	Req2.Data.6	Req2.Data.6	Req2.Data.6	Req2.Data.6	Req2.Data.5	Req2.Data.5	Req2.Data.5	Req2.Data.5	Req2.Data.5	Req2.Data.5	Req2.Data.5	Req2.Data.5
+12	Req2.Data.7	Req2.Data.7	Req2.Data.7	Req2.Data.7	Req2.Data.7	Req2.Data.7	Req2.Data.7	Req2.Data.7	CWReq4	CWReq4	CRdReq3	CRdReq3	CW | Rsp E	CW | Rsp D	CRd Rsp C	FC
+13	RspD.Data.1	RspD.Data.1	RspD.Data.1	RspD.Data.1	RspD.Data.1	RspD.Data.1	RspD.Data.1	RspD.Data.1	RspD.Data.0	RspD.Data.0	RspD.Data.0	RspD.Data.0	RspD.Data.0	RspD.Data.0	RspD.Data.0	RspD.Data.0
+14	RspD.Data.3	RspD.Data.3	RspD.Data.3	RspD.Data.3	RspD.Data.3	RspD.Data.3	RspD.Data.3	RspD.Data.3	RspD.Data.2	RspD.Data.2	RspD.Data.2	RspD.Data.2	RspD.Data.2	RspD.Data.2	RspD.Data.2	RspD.Data.2
+15	RspD.Data.5	RspD.Data.5	RspD.Data.5	RspD.Data.5	RspD.Data.5	RspD.Data.5	RspD.Data.5	RspD.Data.5	RspD.Data.4	RspD.Data.4	RspD.Data.4	RspD.Data.4	RspD.Data.4	RspD.Data.4	RspD.Data.4	RspD.Data.4
+16	RspD.Data.7	RspD.Data.7	RspD.Data.7	RspD.Data.7	RspD.Data.7	RspD.Data.7	RspD.Data.7	RspD.Data.7	RspD.Data.6	RspD.Data.6	RspD.Data.6	RspD.Data.6	RspD.Data.6	RspD.Data.6	RspD.Data.6	RspD.Data.6
+17	Req4.Data.1	Req4.Data.1	Req4.Data.1	Req4.Data.1	Req4.Data.1	Req4.Data.1	Req4.Data.1	Req4.Data.1	Req4.Data.0	Req4.Data.0	Req4.Data.0	Req4.Data.0	Req4.Data.0	Req4.Data.0	Req4.Data.0	Req4.Data.0
+18	Req4.Data.3	Req4.Data.3	Req4.Data.3	Req4.Data.3	Req4.Data.3	Req4.Data.3	Req4.Data.3	Req4.Data.3	Req4.Data.2	Req4.Data.2	Req4.Data.2	Req4.Data.2	Req4.Data.2	Req4.Data.2	Req4.Data.2	Req4.Data.2
+19	Req4.Data.5	Req4.Data.5	Req4.Data.5	Req4.Data.5	Req4.Data.5	Req4.Data.5	Req4.Data.5	Req4.Data.5	Req4.Data.4	Req4.Data.4	Req4.Data.4	Req4.Data.4	Req4.Data.4	Req4.Data.4	Req4.Data.4	Req4.Data.4
+20	Req4.Data.7	Req4.Data.7	Req4.Data.7	Req4.Data.7	Req4.Data.7	Req4.Data.7	Req4.Data.7	Req4.Data.7	Req4.Data6	Req4.Data6	Req4.Data6	Req4.Data6	Req4.Data6	Req4.Data6	Req4.Data6	Req4.Data6
+
+=== TABLE 48 ===
+	64-byte TL Flit	64-byte TL Flit	64-byte TL Flit	64-byte TL Flit	64-byte TL Flit	64-byte TL Flit	64-byte TL Flit	64-byte TL Flit	64-byte TL Flit	64-byte TL Flit	64-byte TL Flit	64-byte TL Flit	64-byte TL Flit	64-byte TL Flit	64-byte TL Flit	64-byte TL Flit
+	Upper TL Half-Flit	Upper TL Half-Flit	Upper TL Half-Flit	Upper TL Half-Flit	Upper TL Half-Flit	Upper TL Half-Flit	Upper TL Half-Flit	Upper TL Half-Flit	Lower TL Half-Flit	Lower TL Half-Flit	Lower TL Half-Flit	Lower TL Half-Flit	Lower TL Half-Flit	Lower TL Half-Flit	Lower TL Half-Flit	Lower TL Half-Flit
+	15	14	13	12	11	10	9	8	7	6	5	4	3	2	1	0
+Flit																
+0	MANDATORY NOP	MANDATORY NOP	MANDATORY NOP	MANDATORY NOP	MANDATORY NOP	MANDATORY NOP	MANDATORY NOP	MANDATORY NOP	Compressed Req2 (Rd A)	Compressed Req2 (Rd A)	Compressed Req1 (Rd A)	Compressed Req1 (Rd A)	Req0(Read A) CLOAD=1	Req0(Read A) CLOAD=1	Req0(Read A) CLOAD=1	Req0(Read A) CLOAD=1
+1	MANDATORY NOP	MANDATORY NOP	MANDATORY NOP	MANDATORY NOP	MANDATORY NOP	MANDATORY NOP	MANDATORY NOP	MANDATORY NOP	NOP	NOP	NOP	NOP	NOP	NOP	Compressed Req3 (Rd A)	Compressed Req3 (Rd A)
+
+=== TABLE 49 ===
+	64-byte TL Flit	64-byte TL Flit	64-byte TL Flit	64-byte TL Flit	64-byte TL Flit	64-byte TL Flit	64-byte TL Flit	64-byte TL Flit	64-byte TL Flit	64-byte TL Flit	64-byte TL Flit	64-byte TL Flit	64-byte TL Flit	64-byte TL Flit	64-byte TL Flit	64-byte TL Flit	
+	Upper TL Half-Flit	Upper TL Half-Flit	Upper TL Half-Flit	Upper TL Half-Flit	Upper TL Half-Flit	Upper TL Half-Flit	Upper TL Half-Flit	Upper TL Half-Flit	Lower TL Half-Flit	Lower TL Half-Flit	Lower TL Half-Flit	Lower TL Half-Flit	Lower TL Half-Flit	Lower TL Half-Flit	Lower TL Half-Flit	Lower TL Half-Flit	
+	15	14	13	12	11	10	9	8	7	6	5	4	3	2	1	0	
+Flit																	Req Cnt
+0	MANDATORY NOP	MANDATORY NOP	MANDATORY NOP	MANDATORY NOP	MANDATORY NOP	MANDATORY NOP	MANDATORY NOP	MANDATORY NOP	Req3 (Rd)	Req3 (Rd)	Req2 (Rd)	Req2 (Rd)	Req1 (Rd)	Req1 (Rd)	Req0 (Rd)	Req0 (Rd)	4
+1	MANDATORY NOP	MANDATORY NOP	MANDATORY NOP	MANDATORY NOP	MANDATORY NOP	MANDATORY NOP	MANDATORY NOP	MANDATORY NOP	NOP	NOP	Req4 (Rd)	Req4 (Rd)	NOP	NOP	NOP	NOP	1
+2	MANDATORY NOP	MANDATORY NOP	MANDATORY NOP	MANDATORY NOP	MANDATORY NOP	MANDATORY NOP	MANDATORY NOP	MANDATORY NOP	NOP	NOP	NOP	NOP	NOP	NOP	Req5 (Rd)	Req5 (Rd)	1
+3	MANDATORY NOP	MANDATORY NOP	MANDATORY NOP	MANDATORY NOP	MANDATORY NOP	MANDATORY NOP	MANDATORY NOP	MANDATORY NOP	NOP	NOP	NOP	NOP	NOP	NOP	NOP	NOP	1
+4	MANDATORY NOP	MANDATORY NOP	MANDATORY NOP	MANDATORY NOP	MANDATORY NOP	MANDATORY NOP	MANDATORY NOP	MANDATORY NOP	Req7 (Rd)	Req7 (Rd)	Req7 (Rd)	Req7 (Rd)	Req6 (Rd)	Req6 (Rd)	NOP	NOP	2
+5	MANDATORY NOP	MANDATORY NOP	MANDATORY NOP	MANDATORY NOP	MANDATORY NOP	MANDATORY NOP	MANDATORY NOP	MANDATORY NOP	Req8 (Rd)	Req8 (Rd)	Req8 (Rd)	Req8 (Rd)	NOP	NOP	NOP	NOP	1
+
+=== TABLE 50 ===
+	64-byte TL Flit	64-byte TL Flit	64-byte TL Flit	64-byte TL Flit	64-byte TL Flit	64-byte TL Flit	64-byte TL Flit	64-byte TL Flit	64-byte TL Flit	64-byte TL Flit	64-byte TL Flit	64-byte TL Flit	64-byte TL Flit	64-byte TL Flit	64-byte TL Flit	64-byte TL Flit	
+	Upper TL Half-Flit	Upper TL Half-Flit	Upper TL Half-Flit	Upper TL Half-Flit	Upper TL Half-Flit	Upper TL Half-Flit	Upper TL Half-Flit	Upper TL Half-Flit	Lower TL Half-Flit	Lower TL Half-Flit	Lower TL Half-Flit	Lower TL Half-Flit	Lower TL Half-Flit	Lower TL Half-Flit	Lower TL Half-Flit	Lower TL Half-Flit	
+	15	14	13	12	11	10	9	8	7	6	5	4	3	2	1	0	
+Flit																	Req Cnt
+0	Req0.Data.0	Req0.Data.0	Req0.Data.0	Req0.Data.0	Req0.Data.0	Req0.Data.0	Req0.Data.0	Req0.Data.0	Req3	Req3	Req2	Req2	Req1	Req1	Req0	Req0	4
+1	Req1.Data.0	Req1.Data.0	Req1.Data.0	Req1.Data.0	Req1.Data.0	Req1.Data.0	Req1.Data.0	Req1.Data.0	Req0.Data.1	Req0.Data.1	Req0.Data.1	Req0.Data.1	Req0.Data.1	Req0.Data.1	Req0.Data.1	Req0.Data.1	1
+2	Req2.Data.0	Req2.Data.0	Req2.Data.0	Req2.Data.0	Req2.Data.0	Req2.Data.0	Req2.Data.0	Req2.Data.0	Req1.Data.1	Req1.Data.1	Req1.Data.1	Req1.Data.1	Req1.Data.1	Req1.Data.1	Req1.Data.1	Req1.Data.1	2
+3	Req2.ByteEnalbes	Req2.ByteEnalbes	Req2.ByteEnalbes	Req2.ByteEnalbes	Req2.ByteEnalbes	Req2.ByteEnalbes	Req2.ByteEnalbes	Req2.ByteEnalbes	Req2.Data.1	Req2.Data.1	Req2.Data.1	Req2.Data.1	Req2.Data.1	Req2.Data.1	Req2.Data.1	Req2.Data.1	3
+4	Req3.Data.1	Req3.Data.1	Req3.Data.1	Req3.Data.1	Req3.Data.1	Req3.Data.1	Req3.Data.1	Req3.Data.1	Req3.Data.0	Req3.Data.0	Req3.Data.0	Req3.Data.0	Req3.Data.0	Req3.Data.0	Req3.Data.0	Req3.Data.0	4
+5	Req3.ByteEnables	Req3.ByteEnables	Req3.ByteEnables	Req3.ByteEnables	Req3.ByteEnables	Req3.ByteEnables	Req3.ByteEnables	Req3.ByteEnables	NOP	NOP	NOP	NOP	NOP	NOP	NOP	NOP	4
+
+=== TABLE 51 ===
+Flow Control Field Signals	Flow Control Field Signals
+Request CMD	Credits for Uncompressed or Compressed Requests in TL Control Half-Flits.
+Response CMD	Credits for Uncompressed or Compressed Read Reponses (not the Data for the Read Responses) or Uncompressed or Compressed Write Responses in the TL Control Half-Flits.
+Request Data	Credits for 64-byte data buffers used to hold data for Write and WriteFull Requests, Operand Data for AtomicR/AtomicNR Requests, Vendor Defined Commands with Data, andUPLI Write Message Requests. Byte Enables are held in dedicated buffers associated with the Data or Request and therefore do not require explicit Credits.
+Response Data	Credits for 64-byte data buffers used to hold data for Read Responses (which have no associated Byte Enables).
+
+=== TABLE 52 ===
+TL Control Half-Flit Field legal Field Type Encodings (upper 4 bits of Control Field).	TL Control Half-Flit Field legal Field Type Encodings (upper 4 bits of Control Field).
+Value	Message Type
+0x0	Flow Control Pool/NOP Indication.
+0x1	Uncompressed Request
+0x2	Uncompressed Response
+0x3	Compressed Request
+0x4	Compressed Response for Single-Beat Read Response
+0x5	Compressed Response for Write or Multi-Beat Read Response
+
+=== TABLE 53 ===
+Defined TL Message Half-Flits	Defined TL Message Half-Flits
+Value	Message Type
+0x00	NOP TL Message Half-Flit
+0x20	Poisoned Data TL Message Half-Flit
+0x01	Initial Credit Release Complete TL Message Half-Flit.
+
+=== TABLE 54 ===
+Uncompressed Request Field (FTYPE = 0x01) signals	Uncompressed Request Field (FTYPE = 0x01) signals	Uncompressed Request Field (FTYPE = 0x01) signals	Uncompressed Request Field (FTYPE = 0x01) signals
+Name	Size (bits)	Position	Description
+FTYPE	4	[127:124]	Field Type. This signal, with a value of 0x01, indicates the | Field is an Uncompressed Request Field.
+CMD	6	[123:118]	Command. This signal carries the UPLI ReqCmd signal value for this Request.
+VCHAN	2	[117:116]	Virtual Channel. This signal carries the UPLI ReqVC signal | value for this Request.
+ASI	2	[115:114]	Address Space Identifier. This signal carries the UPLI ReqASI signal value for this Request.
+TAG	11	[113:103]	Tag. This signal carries the UPLI ReqTag signal value for | this Request.
+POOL	1	[102]	Pool. This signal indicates whether the TL is utilizing a Pool Credit to issue this Request or a Virtual Channel Credit. The value on this signal is independent of the ReqPool signal on the UPLI interface (TL Credit management is independent of UPLI Credit Management).
+ATTR	8	[101:94]	Attribute. This signal carries the UPLI ReqAttr signal for | this Request.
+LEN	6	[93:88]	Length. This signal carries the UPLI ReqLen signal value for this Request.
+METADATA	8	[87:80]	Metadata. This signal carries the UPLI ReqMetadata signal | value for this Request.
+ADDR	55	[79:25]	Address. This signal carries the UPLI ReqAddr[56:2] signal value for this Request. This is a doubleword aligned | address.
+SRCACCID	10	[24:15]	Source Accelerator ID. This signal carries the UPLI | ReqSrcPhysAccID signal value for this Request.
+DSTACCID	10	[14:5]	Destination Accelerator ID. This signal carries the UPLI ReqDstPhysAccId signal value for this Request.
+CLOAD	1	[4]	Cache Load. This signal, when equal to ‘1’, indicates that the Receiver TL should load ReqAddr[56:20] (ADDR[54:18]) into the Rx Address Cache at the way indicated by CWAY and at the row indicated by either SRCACCID[9:0] (for Rx Caches on Accelerators) or DSTACCID[9:0] (for Rx Address Caches on Switches). When this signal equals ‘0’, the Rx | Address Cache is not loaded.
+CWAY	2	[3:2]	Cache Way. Designates which way of the Address Cache to load the UPLI signal ReqAddr[56:20] (ADDR[54:18]) into when CLOAD=’1’. This signal is only valid when CLOAD=’1’.
+NUMBEATS	2	[1:0]	Number of Beats. This signal indicates the number of Data Beats that will be transferred for this Request if CMD[5] = | b’1’ either to transport Atomic Operands, Data for a Write or Write Full, on any Vendor Defined Commands.
+TOTAL BITS:	128	4 Sectors	4 Sectors
+
+=== TABLE 55 ===
+Uncompressed Response Field (FTYPE = 0x2) signals	Uncompressed Response Field (FTYPE = 0x2) signals	Uncompressed Response Field (FTYPE = 0x2) signals	Uncompressed Response Field (FTYPE = 0x2) signals
+Name	Size (bits)	Position	Description
+FTYPE	4	[63:60]	Field Type. This signal, with a value of0x2, indicates the | Field is an Uncompressed Response Field.
+VCHAN	2	[59:58]	Virtual Channel. This field carries the UPLI RdRspVC or WrRspVC signal value (determined by the RD/WR signal value).
+TAG	11	[57:47]	Tag. This field carries the UPLI RdRspTag or WrRspTag signal value (determined by the RD/WR signal value).
+POOL	1	[46]	Pool. This signal indicates whether the TL is utilizing a Pool Credit or a Virtual Channel Credit to issue this Response. The value on this signal is independent of the RdRspCreditPool or WrRspCreditVC signal on the UPLI interface (TL Credit management is independent of UPLI Credit Management).
+LEN	2	[45:44]	Length. This signal carries the value of the UPLI | RdRspNumBeats signal for Multi-Beat Read Responses. The LEN field is only meaningful for Multi-Beat Read Responses. Single Beat Read Responses and all Write Responses are always one beat, the LEN field is not valid, and this field | should be set to b’00’.
+OFFSET	2	[43:42]	Offset. This signal carries the value of the UPLI RdRspOffset signal for Single-Beat Read Responses. For Write Responses (no data is returned with a Write Response) and Multi-Beat Read Responses (the TL is responsible for recreating the RdRspOffset values in the burst transfer), this signal is not | valid and should be set to b’00’.
+STATUS	4	[41:38]	Status. This signal carries the value of the UPLI RdRspStatus or WrRspStatus signals (determined by the RD/WR signal value).
+RD/WR	1	[37]	Read/Write Indicator. This signal indicates whether the Response is a Read or a Write Response (note: AtomicNR | Requests cause a Write Response, and AtomicR Requests cause a Read Response).
+LAST	1	[36]	Last. This signal carries the value of the UPLI RdRspLast signal. This signal is valid only for Read Responses and | should be set to b’0’ for Write Responses.
+SRCACCID	10	[35:26]	Source Accelerator ID. This field carries the UPLI RdRspSrcPhysAccID or WrRspSrcPhysAccID signal value for this Response depending on whether the Response is for a Read, Write/WriteFull, or an Atomic/AtomicNR Request (identified by the TAG value for this Response). (Note: the SRCACCID signal value, if carried, on the Response is equal to the DSTACCID signal value on the corresponding | Request). The SRCACCID value is not required functionally but is useful for debug. Implementations may choose to not carry the SRCACCID value through the TL and/or Switch. | When the signal does not contain an accurate value, it | should be drive to zero on corresponding UPLI interfaces.
+DSTACCID	10	[25:16]	Destination Accelerator ID. This field carries the UPLI RdRspDstPhysAccID or WrRspDstPhysAccID signal depending on whether the Response is for a Read, Write/WriteFull, or an AtomicR/AtomicNR (identified by the TAG value). (Note: the DSTACCID signal value on the Response is equal to the SRCACCID signal value on the corresponding Request). This signal is used to route the | Response back to the Accelerator that originally sourced the Request.
+
+=== TABLE 56 ===
+Uncompressed Response Field (FTYPE = 0x2) signals	Uncompressed Response Field (FTYPE = 0x2) signals	Uncompressed Response Field (FTYPE = 0x2) signals	Uncompressed Response Field (FTYPE = 0x2) signals
+Name	Size (bits)	Position	Description
+SPARE(S)	16	[15:0]	Sixteen bits are unassigned in this field format.
+TOTAL BITS:	64	2 Sectors	2 Sectors
+
+=== TABLE 57 ===
+Compressed Request Field (FTYPE = 0x3) signals	Compressed Request Field (FTYPE = 0x3) signals	Compressed Request Field (FTYPE = 0x3) signals	Compressed Request Field (FTYPE = 0x3) signals
+Name	Size (bits)	Position	Description
+FTYPE	4	[63:60]	Field Type. This signal, with a value of 0x3, indicates the Field is a Compressed Request Field.
+CMD	3	[59:57]	Command. This signal carries a compressed version of the | UPLI ReqCmd signal value for this Request. See Table 5-33 Compressed Request Command Encoding below for details.
+VCHAN	2	[56:55]	Virtual Channel. This signal carries the UPLI ReqVC signal value for this Request.
+ASI	2	[54:53]	Address Space Identifier. This signal carries the UPLI ReqASI signal value for this Request.
+TAG	11	[52:42]	Tag. This signal carries the UPLI ReqTag signal value for | this Request.
+POOL	1	[41]	Pool. This signal indicates whether the TL is utilizing a Pool Credit to issue this Request or a Virtual Channel Credit. The value on this signal is independent of the ReqPool signal on the UPLI interface (TL Credit management is independent of UPLI Credit Management).
+LEN	2	[40:39]	Length. This signal carries a compressed version of the UPLI ReqLen signal value for this Request. A value of ‘0’ indicates a 64-byte transfer, a value of ‘1’ indicates a 128-byte transfer, a value of ‘2’ indicates a 192 byte transfer, | and a value of ‘3’ indicates a 256 byte transfer.
+METADATA	3	[38:36]	Metadata. This signal carries the UPLI signal | ReqMetaData[2:0]. The remaining bits of Metadata are not carried and must have a value of b’00000’.
+ADDR	14	[35:22]	Address. This signal carries the UPLI ReqAddr[19:6] signal value indicating the aligned 64-byte block within the previously cached 1MB region for this Request that is being addressed. UPLI signal ReqAddr[56:20] are reconstituted | from the Rx Address Cache.
+SRCACCID	10	[21:12]	Source Accelerator ID. This field carries the UPLI ReqSrcPhysAccID signal value for this Request.
+DSTACCID	10	[11:2]	Destination Accelerator ID. This field carries the UPLI ReqDstPhysAccId signal value for this Request.
+CWAY	2	[1:0]	Cache Way. Designates which way of the Address Cache to use to reconstitute UPLI signal ReqAddr[56:20] for this Request.
+TOTAL BITS:	64	2 Sectors	2 Sectors
+
+=== TABLE 58 ===
+Compressed Request Useage Restrictions	Compressed Request Useage Restrictions
+CMD	The command requested shall be compressible (i.e. must be one of the command types listed in the table)
+ATTR	Reads: The UPLI ReqAttr field shall have a value 0xFF (i.e. all bytes are enabled). | Writes: The ReqAttr field shall have a value of 0x00. | Atomics are not supported in Compressed Requests.
+LEN	The access must be 64, 128, 192, or 256 bytes.
+ADDR	The address of the Request must be on a 64 byte alignment and the transfer must not cross a 256 byte boundary.
+METADATA	ReqMetadata[7:2] shall be b’000000’.
+Address Cache	The Address of the Request shall hit in the Address Cache and the entry in the Address Cache shall not be overwritten (or invalidated) before the Compressed Request is issued.
+
+=== TABLE 59 ===
+Compressed Request Command Encoding	Compressed Request Command Encoding
+000	Read
+001	Reserved
+010	Reserved
+011	Reserved
+100	Write
+101	Reserved
+110	WriteFull
+111	Reserved
+
+=== TABLE 60 ===
+Compressed Response Field (FTYPE = 0x4) signals	Compressed Response Field (FTYPE = 0x4) signals	Compressed Response Field (FTYPE = 0x4) signals	Compressed Response Field (FTYPE = 0x4) signals
+Name	Size (bits)	Position	Description
+FTYPE	4	[31:28]	Field Type. This signal, with a value of 0x4, indicates the Field is a Compressed Response for a Single Beat Read Response.
+VCHAN	2	[27:26]	Virtual Channel. This signal carries the UPLI RdRspVC signal value.
+TAG	11	[25:15]	Tag. This signal carries the UPLI RdRspTag signal value.
+POOL	1	[14]	Pool. This signal indicates whether the TL is utilizing a Pool Credit or a Virtual Channel Credit to issue this Response. | The value on this signal is independent of the | RdRspCreditPool or WrRspCreditVC signal on the UPLI interface (TL Credit management is independent of UPLI Credit Management).
+DSTACCID	10	[13:4]	Destination Accelerator ID. This signal carries the UPLI RdRspDstPhysAccID signal value (Note: the DSTACCID signal value on the Response is equal to the SRCACCID | signal value on the corresponding Request). This signal is used to route the Response back to the Accelerator that originally sourced the Request.
+OFFSET	2	[3:2]	Offset. This signal carries the value of the UPLI RdRspOffset | signal.
+LAST	1	[1]	Last. This signal carries the value of the UPLI RdRspLast signal.
+SPARE(S)	1	[0]	One bit is unassigned in this field format.
+TOTAL BITS:	32	1 Sector	1 Sector
+
+=== TABLE 61 ===
+Compressed Response for Single-Beat Read Response Usage Restrictions	Compressed Response for Single-Beat Read Response Usage Restrictions
+STATUS	The STATUS field of the response must have a value of b’0000’: “OKAY (Normal Completion)”.
+
+=== TABLE 62 ===
+Compressed Response Field (FTYPE = 0x5) signals	Compressed Response Field (FTYPE = 0x5) signals	Compressed Response Field (FTYPE = 0x5) signals	Compressed Response Field (FTYPE = 0x5) signals
+Name	Size (bits)	Position	Description
+FTYPE	4	[31:28]	Field Type. This signal, with a value of 0x5, indicates the Field is a Compressed Response for a Single Beat Read Response.
+VCHAN	2	[27:26]	Virtual Channel. This signal carries the UPLI RdRspVC or WrRspVC signal value.
+TAG	11	[25:15]	Tag. This signal carries the UPLI RdRspTag or WrRspTag | signal value.
+POOL	1	[14]	Pool. This signal indicates whether the TL is utilizing a Pool Credit or a Virtual Channel Credit to issue this Response. | The value on this signal is independent of the | RdRspCreditPool or WrRspCreditVC signal on the UPLI interface (TL Credit management is independent of UPLI Credit Management).
+DSTACCID	10	[13:4]	Destination Accelerator ID. This signal carries the UPLI RdRspDstPhysAccID or WrRspDstPhysAccID signal value (Note: the DSTACCID signal value on the Response is equal to the SRCACCID signal value on the corresponding | Request). This signal is used to route the Response back to the Accelerator that originally sourced the Request.
+LEN	2	[3:2]	Length. This signal carries the values for the UPLI | RdRspNumBeats signal for a Read Response and b’00’ for a Write Response. This signal is only valid for a Read Response and indicates the number of contiguous 64-byte data beats to be returned.
+RD/WR	1	[1]	This signal indicates whether the Response is a Read Response or a Write Response (b’1’ is a Read, b’0’ is a Write)
+SPARE(S)	1	[0]	One bit is unassigned in this field format.
+TOTAL BITS:	32	1 Sector	1 Sector
+
+=== TABLE 63 ===
+Compressed Response for Single-Beat Read Response Usage Restrictions	Compressed Response for Single-Beat Read Response Usage Restrictions
+STATUS	The STATUS field of the response must have a value of b’0000’: “OKAY (Normal Completion)”.
+
+=== TABLE 64 ===
+Compressed Response Field (FTYPE = 0) signals	Compressed Response Field (FTYPE = 0) signals	Compressed Response Field (FTYPE = 0) signals	Compressed Response Field (FTYPE = 0) signals
+Name	Size (bits)	Position	Description
+FTYPE	4	[31:28]	Field Type. This signal, with a value of 0, indicates the Field is a Flow Control/NOP field.
+ReqCmd	6	[27:22]	Request Cmd. Returns the Request Command Credits (i.e. Credits for Requests from the UPLI Request Channel). The field format is ‘tvvccc’ where ‘t’ is a type field (0=pool, | 1=VC) of the Credits, ‘vv’ is the Virtual Channel of the | Credits (valid only if t = 1), and ‘ccc’ is the number of Credits being returned (0 to 7).
+RspCmd	6	[21:16]	Response Cmd. Returns the Response Command Credits (i.e. Credits for Rd Responses (not data) and the Wr Responses from the Requests from the UPLI Rd Response/Data and Write Response Channels). The field format is ‘tvvccc’ where ‘t’ is a type field (0=pool, 1=VC) of the Credits, ‘vv’ is the Virtual Channel of the Credits (valid only if t = 1), and ‘ccc’ is the number of Credits being | returned (0 to 7).
+ReqData	8	[15:8]	Request Data. Returns the Request Data Credits (i.e. Credits for data from the UPLI OrigData Channel). The field format is ‘tvvccccc’ where ‘t’ is a type field (0=pool, 1=VC) of the Credits, ‘vv’ is the Virtual Channel of the Credits (valid only if t = 1), and ‘ccccc’ is the number of Credits being returned | (0 to 31).
+RspData	8	[7:0]	Response Data. Returns the Respopnse Data Credits (i.e. Credits for data from the UPLI Read Response/Data Channel). The field format is ‘tvvccccc’ where ‘t’ is a type field (0=pool, 1=VC) of the Credits, ‘vv’ is the Virtual Channel of the Credits (valid only if t = 1), and ‘ccccc’ is the number of Credits being returned (0 to 31).
+TOTAL BITS:	32	1 Sector	1 Sector
+
+=== TABLE 65 ===
+Tx Pacing/Rx rate adaptaion
+DL Message Service
+Flit Packing
+Link Level Replay
+
+=== TABLE 66 ===
+Segment Header	Number of payload Sectors	Number of payload bytes	Half Segment Sector ranges
+SH0	32 Sectors	128-bytes	[0:15], [16:31]
+SH1	32 Sectors	128-bytes	[32:47], [48:63]
+SH2	32 Sectors	128-bytes	[64:79],[80:95]
+SH3	31 Sectors	124-bytes	[96:111],[112:126]
+SH4	30 Sectors	120-bytes	[127:142],[143:156]
+
+=== TABLE 67 ===
+Field Name	Position	Description
+DLAltSector	[0]	DL Alternative sector | 0b-No alternative sector in segment 1b-DL alternative sector in segment
+Reserved	[1]	Reserved
+Message[0]	[3:2]	TL Flit[0] Message bit indicators | if TL Flit[0] is not present then reserved else Message bit indicators
+TL Flit[0]	[4]	TL Flit[0] present | 0b - TL Flit[0] not present 1b - TL Flit[0] present
+Message[1]	[6:5]	TL Flit[1] Message bit indicators | if TL Flit[1] is not present then reserved else Message bit indicators
+TL Flit[1]	[7]	TL Flit present | 0b - TL[1] Flit not present 1b - TL[1] Flit present
+
+=== TABLE 68 ===
+Message bits	Message bits	64-byte TL Flit (16 sectors) Mirrored view	64-byte TL Flit (16 sectors) Mirrored view	64-byte TL Flit (16 sectors) Mirrored view	64-byte TL Flit (16 sectors) Mirrored view	64-byte TL Flit (16 sectors) Mirrored view	64-byte TL Flit (16 sectors) Mirrored view	64-byte TL Flit (16 sectors) Mirrored view	64-byte TL Flit (16 sectors) Mirrored view	64-byte TL Flit (16 sectors) Mirrored view	64-byte TL Flit (16 sectors) Mirrored view	64-byte TL Flit (16 sectors) Mirrored view	64-byte TL Flit (16 sectors) Mirrored view	64-byte TL Flit (16 sectors) Mirrored view	64-byte TL Flit (16 sectors) Mirrored view	64-byte TL Flit (16 sectors) Mirrored view	64-byte TL Flit (16 sectors) Mirrored view
+Message bits	Message bits	Lower half TL Flit	Lower half TL Flit	Lower half TL Flit	Lower half TL Flit	Lower half TL Flit	Lower half TL Flit	Lower half TL Flit	Lower half TL Flit	Upper half TL Flit	Upper half TL Flit	Upper half TL Flit	Upper half TL Flit	Upper half TL Flit	Upper half TL Flit	Upper half TL Flit	Upper half TL Flit
+M0	M1	0	1	2	3	4	5	6	7	8	9	10	11	12	13	14	15
+
+=== TABLE 69 ===
+Message class (mclass)	code	Message Type (mtype)	code
+Basic Messages	0b0000	No-Op message	0b000
+Basic Messages	0b0000	TL Rate Notification	0b100
+Basic Messages	0b0000	Device ID Request	0b101
+Basic Messages	0b0000	Port Number Request and Response	0b110
+Control Messages	0b1000	DL Channel On/Offline negotiation	0b100
+UART Messages	0b0001	UART Stream Transport Message	0b000
+UART Messages	0b0001	UART Stream Credit Update	0b001
+UART Messages	0b0001	UART Stream Reset Request	0b110
+UART Messages	0b0001	UART Stream Reset Response	0b111
+
+=== TABLE 70 ===
+Field	Bit	Description
+Compressed	0	Set to 0, not supported
+Reserved	1	Reserved
+mclass	5:2	Message Class
+mtype	8:6	Message Type
+Reserved	11:9	Reserved
+Ack	12	0: Request message | 1: Response message
+Reserved	15:13	Reserved
+Rate	31:16	TL rate, only valid for Request message, reserved otherwise.
+
+=== TABLE 71 ===
+Field	Bit	Description
+Compressed	0	Set to 0, not supported
+Reserved	1	Reserved
+mclass	5:2	Message Class
+mtype	8:6	Message Type
+Reserved	11:9	Reserved
+Ack	12	0: Request message | 1: Response message
+Reserved	15:13	Reserved
+ID	25:16	10-bit Switch or accelerator ID
+Reserved	28:26	Reserved
+Type	30:29	0: for a switch | 1: for an accelerator other reserved
+Valid	31	0: if ID is not valid 1: if ID is valid
+
+=== TABLE 72 ===
+Field	Bit	Description
+Compressed	0	Set to 0, not supported
+Reserved	1	Reserved
+mclass	5:2	Message Class
+mtype	8:6	Message Type
+Reserved	11:9	Reserved
+
+=== TABLE 73 ===
+Ack	12	0: Request message | 1: Response message
+Reserved	15:13	Reserved
+Port number	27:16	10-bit port number.
+Reserved	30:28	Reserved
+Valid	31	0: if port number is not valid 1: if port number is valid
+
+=== TABLE 74 ===
+Field	Bit	Description
+Compressed	0	Set to 0, not supported
+Reserved	1	Reserved
+mclass	5:2	Message Class
+mtype	8:6	Message Type
+Reserved	31:9	Reserved
+
+=== TABLE 75 ===
+Initiate
+
+Complete
+
+
+=== TABLE 76 ===
+Field	Bit	Description
+Compressed	0	Set to 0, not supported
+Reserved	1	Reserved
+mclass	5:2	Message Class
+mtype	8:6	Message Type
+Reserved	15:9	Reserved
+Channel.TargetState	19:16	0xxx: Channel offline | 1xxx: Channel online xNNN: Channel ID
+Channel.Command	23:20	0100: Request | 0110: Ack | 0111: NAck | 1000: decision pending others: reserved.
+Channel.Response	27:24	0xxx: Channel offline 1xxx: Channel online xNNN: Channel ID
+Reserved	31:28	Reserved
+
+=== TABLE 77 ===
+Field	Bit	Description
+Length	7:0	Payload Length -1 | 0x00: payload length = 1 DWord 0XFF: payload length = 256 DWords
+
+=== TABLE 78 ===
+Type	15:8	Message type
+Vendor ID	31:16	The vendor ID assigned by the PCI-SIG to the vendor that defined this packet, or 0xFFFF for UALink defined packet.
+
+=== TABLE 79 ===
+Field	Bit	Description
+Compressed	0	Set to 0, not supported
+Reserved	1	Reserved
+mclass	5:2	Message Class
+mtype	8:6	Message Type
+Stream ID	11:9	000: stream 0 others reserved
+allStreams	12	0: only stream indicated 1: all streams
+Reserved	31:13	Reserved
+
+=== TABLE 80 ===
+Field	Bit	Description
+Compressed	0	Set to 0, not supported
+Reserved	1	Reserved
+mclass	5:2	Message Class
+mtype	8:6	Message Type
+Stream ID	11:9	000: stream 0 others reserved
+allStreams	12	0: only stream indicated 1: all streams
+Status	15:13	000: success others reserved
+Reserved	31:16	Reserved
+
+=== TABLE 81 ===
+Field	Bit	Description
+Compressed	0	Set to 0, not supported
+Reserved	1	Reserved
+mclass	5:2	Message Class
+mtype	8:6	Message Type
+Stream ID	11:9	000: stream 0 others reserved
+Reserved	26:12	Reserved
+Length	31:27	Length of payload +1 DWords, i.e. length = 0 means 1 DWord payload.
+DWord payload 0	63:32	First payload DWord
+DWord payload 1	95:64	Second payload DWord, if needed.
+DWord payload n	(n+2)*32-1:(n+1)*32	N’th payload DWord, if needed.
+
+=== TABLE 82 ===
+Field	Bit	Description
+Compressed	0	Set to 0, not supported
+Reserved	1	Reserved
+mclass	5:2	Message Class
+mtype	8:6	Message Type
+Stream ID	11:9	000: stream 0 others reserved
+Reserved	19:12	Reserved
+DataFCSeq	31:20	Data flow control sequence update.
+
+=== TABLE 83 ===
+Field	Bit	Description
+op	23:21	When payload ==0 (NOP): | 0b000: NOP Flit others: Reserved | When payload ==1: | 0b000: Original transmission of payload Flit “org” 0b001: Replay of payload Flit “rpy” | others: Reserved
+payload	20	1: payload Flit | 0: NOP Flit
+reserved	19:17	Reserved
+
+=== TABLE 84 ===
+flitSeqNo	16:8	Sequence number of Flit. This is the full 9-bit value.
+reserved	7:0	Reserved
+
+=== TABLE 85 ===
+Field	Bit	Description
+op	23:21	0b010: Ack | 0b011: Standard Replay Request “rpy” others: Reserved
+payload	20	1: payload Flit | 0: NOP Flit
+ackReqSeq	19:11	Full sequence number of Ack Flit that is being acknowledged or Sequence number of the Replay Request. This is the full 9-bit value.
+flitSeqLo	10:8	Lower 3 bits of Flit Sequence Number.
+reserved	7:0	Reserved
+
+=== TABLE 86 ===
+Application
+Presentation
+Session
+Transport
+Network
+Data Link
+Physical
+
+=== TABLE 87 ===
+Rate	RS	FEC, PCS	PMA	interleave
+100GBASE-KR1/CR1	81	82, 91	135	1-way
+200GBASE-KR2/CR2	117	119	120	2-way
+400GBASE-KR4/CR4	117	119	120	2-way
+
+=== TABLE 88 ===
+Rate	RS	PCS	PMA	Codeword interleave	Codeword interleave	Codeword interleave
+Rate	RS	PCS	PMA	802.3	UALink latency reduced	UALink latency reduced
+200GBASE-KR1/CR1	117	119	176	4-way	2-way	1-way
+400GBASE-KR2/CR2	117	119	176	4-way	2-way	
+800GBASE-KR4/CR4	170	172	176	4-way		
+
+=== TABLE 89 ===
+Input Data	Sync	Block Payload	Block Payload	Block Payload	Block Payload	Block Payload	Block Payload	Block Payload	Block Payload	Block Payload	Block Payload	Block Payload	Block Payload	Block Payload	Block Payload	Block Payload
+Input Data	0	65	0	65	0	65	0	65	0	65	0	65	0	65	0	65	0	65	0	65	0	65	0	65	0	65	0	65	0	65	0	65
+Data Block Format																
+D0D1D2D3D4D5D6D7	01	D0	D1	D1	D2	D2	D3	D3	D4	D4	D5	D5	D6	D6	D7	D7
+Control Block Format		Block Type														
+C0C1C2C3C4C5C6C7	10	0x1E	C0	C1	C1	C2	C2	C3	C3	C4	C4	C5	C5	C6	C6	C7
+S0D1D2D3D4D5D6D7	10	0x78	D1	D1	D2	D2	D3	D3	D4	D4	D5	D5	D6	D6	D7	D7
+O0D1D2D3Z4Z5Z6Z7	10	0x4B	D1	D1	D2	D2	D3	D3	O0	0x000_0000	0x000_0000	0x000_0000	0x000_0000	0x000_0000	0x000_0000	0x000_0000
+
+=== TABLE 90 ===
+Lane0	Lane1	Lane2	Lane3	Lane4	Lane5	Lane6	Lane7	Description
+Sequence	0x00	0x00	0x00	0x00	0x00	0x00	0x00	Reserved
+Sequence	0x00	0x00	0x01	0x00	0x00	0x00	0x00	Local fault
+Sequence	0x00	0x00	0x02	0x00	0x00	0x00	0x00	Remote fault
+Sequence	0x00	0x00	0x03	0x00	0x00	0x00	0x00	Link Interruption
+
+=== TABLE 91 ===
+Control Character	Notation	64B/66B code
+Idle	/I/	0x00
+Error	/E/	0x1E
+
+=== TABLE 92 ===
+Rate	RS	PCS	PMA	interleave
+200GBASE-KR1/CR1	117	119*	176*	1-way
+200GBASE-KR1/CR1	117	119	176*	2-way
+400GBASE-KR2/CR2	117	172	176*	2-way
+
+=== TABLE 93 ===
+tx_scrambled_am	tx_scrambled_am
+m	m	m0
+
+=== TABLE 94 ===
+RS-Encode	RS-Encode
+m	c =m
+
+=== TABLE 95 ===
+Adversary tools	Description	Adversary goal
+Transaction snooping	The adversary extracts UALink packets at any accessible interface to read, analyze UALink traffic	Read cleartext. Retrieve ciphertext to observe and analyze patterns.
+Transaction corruption	The adversary either replaces genuine packets on UALink link with chosen ones or flip specific bits of packets in transit.	The purpose of the adversary is to get the corrupted packets accepted and consumed at destination.
+Transaction replay	The adversary records packets and injects them later on.	The purpose of the adversary is to get the | replayed packets accepted and consumed at destination.
+Transaction deletion	The adversary intercepts and drops a packet sent by a source in order for the destination to never receive it.	The purpose of the adversary is to get the destination to consume stale data, for instance by preventing a memory | location from being updated.
+Transaction injection	The adversary crafts a packet it injects toward an accelerator of its chance.	The purpose of the adversary is to get the injected packets accepted and consumed at destination.
+Endpoint spoofing	The adversary assumes the identity of a valid endpoint	The purpose of the adversary is to steal | sensitive data by sending read requests or receiving read response.
+
+=== TABLE 96 ===
+Threat description	Mitigation
+1. Adversary gets access to UALinkSec secrets (e.g., keys or encrypted traffic)	UALink traffic is encrypted on interfaces accessible to the adversary. Keys are kept inside the accelerators. It is the responsibility of the accelerator manufacturer to properly protect key storage and programing from Adversaries in scope for UALinkSec. The following | requirements shall be met: | Secrets shall not be included in unencrypted headers | A monotonic counter is used to generate the Invocation field of the IV | Follow the recommended number of key invocation limit before refreshing the key.
+2. Adversary injects chosen UALink packets or corrupts packets between two UALink ports	When integrity protection is enabled, an integrity tag is calculated at the destination port and verified against the integrity tag carried in the received packet. Since the adversary does not have the key, an injected or corrupted packet is detected by failure of the verification of the integrity tag. | Note: when integrity protection is not enabled, the decryption of the injected or corrupted packet will likely result in unexpected behavior as decryption will use a different counter | value than the one used for encryption of the packet.
+3. Adversary replays UALink packets	When integrity protection is enabled, an integrity tag is verified at the destination port. The integrity tag computation is based on a counter (nonce) that is incremented for each packet received. When the adversary replays a packet, the counter used by the destination port for integrity tag calculation is different than the counter that was used for the tag carried with the replayed packet, resulting in a tag mismatch and replay detection. | Note: when integrity protection is not enabled, the decryption of the replayed packet will | likely result in unexpected behavior as decryption will use a different counter value than the one used for encryption of the packet.
+4. Adversary intercepts and drops packet(s) between two UALink ports	When integrity protection is enabled, an integrity tag is verified at the destination port. The integrity tag computation is based on a counter (nonce) that is incremented for each packet | received. The dropped packet is detected as soon as the next packet is received, as a counter mismatch triggers a failure of the integrity tag verification.
+5. Adversary leverages a vulnerability in the switch to | snoop on traffic or inject traffic	The switch is outside the TCB and only sees encrypted and integrity protected traffic. It does not have the key required to properly encrypt and integrity protect UALink packets. As a result, any attack from the switch is mitigated in the same way as for Threat 1, 2, 3 and 4 | above.
+6. Adversary (i.e., infrastructure provider) includes a vulnerable accelerator (e.g., running known vulnerable firmware) in the | Virtual Pod offered to the Tenant.	UALinkSec requires the Tenant to authenticate and attest the accelerators in the Virtual Pod before distributing the secret keys necessary to send and receive encrypted UALink traffic. Through authentication and attestation, the Tenant verifies the accelerators offered by the infrastructure provider meet its policy requirements.
+7. Adversary swaps an accelerator with malicious one after initial authentication and attestation	UALinkSec provides runtime binding. The initial accelerator authentication and attestation at Virtual Pod creation/acceptance by the Tenant, is extended through the life of the Virtual Pod by establishing the shared secret used for traffic encryption. If the adversary swaps a genuine device with a malicious one, the malicious device cannot participate in the Virtual Pod traffic | as it does not know the necessary secret key to send and receive traffic.
+8. Brute force attack by observing cipher text on UALink link and knowledge of plaintext from | workload analysis. Goal of the adversary is to retrieve the key.	UALinkSec uses AES-GCM with 256b following NIST recommendations – to prevent adversary from retrieving the secret key or plaintext from ciphertext.
+
+=== TABLE 97 ===
+	64-byte TL Flit	64-byte TL Flit	64-byte TL Flit	64-byte TL Flit	64-byte TL Flit	64-byte TL Flit	64-byte TL Flit	64-byte TL Flit	64-byte TL Flit	64-byte TL Flit	64-byte TL Flit	64-byte TL Flit	64-byte TL Flit	64-byte TL Flit	64-byte TL Flit	64-byte TL Flit
+	Upper TL Half-Flit	Upper TL Half-Flit	Upper TL Half-Flit	Upper TL Half-Flit	Upper TL Half-Flit	Upper TL Half-Flit	Upper TL Half-Flit	Upper TL Half-Flit	Lower TL Half-Flit	Lower TL Half-Flit	Lower TL Half-Flit	Lower TL Half-Flit	Lower TL Half-Flit	Lower TL Half-Flit	Lower TL Half-Flit	Lower TL Half-Flit
+	15	14	13	12	11	10	9	8	7	6	5	4	3	2	1	0
+Flit																
+0	AuthTag1	AuthTag1	AuthTag0	AuthTag0	AuthTagB	AuthTagB	AuthTagA	AuthTagA	CWReq1	CWReq1	CWReq0	CWReq0	CWR B	CWR A	NOP	FC
+1	Req0.Data.1	Req0.Data.1	Req0.Data.1	Req0.Data.1	Req0.Data.1	Req0.Data.1	Req0.Data.1	Req0.Data.1	Req0.Data.0	Req0.Data.0	Req0.Data.0	Req0.Data.0	Req0.Data.0	Req0.Data.0	Req0.Data.0	Req0.Data.0
+2	Req0.Data.3	Req0.Data.3	Req0.Data.3	Req0.Data.3	Req0.Data.3	Req0.Data.3	Req0.Data.3	Req0.Data.3	Req0.Data.2	Req0.Data.2	Req0.Data.2	Req0.Data.2	Req0.Data.2	Req0.Data.2	Req0.Data.2	Req0.Data.2
+3	Req0.Data.5	Req0.Data.5	Req0.Data.5	Req0.Data.5	Req0.Data.5	Req0.Data.5	Req0.Data.5	Req0.Data.5	Req0.Data.4	Req0.Data.4	Req0.Data.4	Req0.Data.4	Req0.Data.4	Req0.Data.4	Req0.Data.4	Req0.Data.4
+4	Req0.Data.7	Req0.Data.7	Req0.Data.7	Req0.Data.7	Req0.Data.7	Req0.Data.7	Req0.Data.7	Req0.Data.7	Req0.Data.6	Req0.Data.6	Req0.Data.6	Req0.Data.6	Req0.Data.6	Req0.Data.6	Req0.Data.6	Req0.Data.6
+5	Req1.Data.1	Req1.Data.1	Req1.Data.1	Req1.Data.1	Req1.Data.1	Req1.Data.1	Req1.Data.1	Req1.Data.1	Req1.Data.0	Req1.Data.0	Req1.Data.0	Req1.Data.0	Req1.Data.0	Req1.Data.0	Req1.Data.0	Req1.Data.0
+6	Req1.Data.3	Req1.Data.3	Req1.Data.3	Req1.Data.3	Req1.Data.3	Req1.Data.3	Req1.Data.3	Req1.Data.3	Req1.Data.2	Req1.Data.2	Req1.Data.2	Req1.Data.2	Req1.Data.2	Req1.Data.2	Req1.Data.2	Req1.Data.2
+7	Req1.Data.5	Req1.Data.5	Req1.Data.5	Req1.Data.5	Req1.Data.5	Req1.Data.5	Req1.Data.5	Req1.Data.5	Req1.Data.4	Req1.Data.4	Req1.Data.4	Req1.Data.4	Req1.Data.4	Req1.Data.4	Req1.Data.4	Req1.Data.4
+8	Req1.Data.7	Req1.Data.7	Req1.Data.7	Req1.Data.7	Req1.Data.7	Req1.Data.7	Req1.Data.7	Req1.Data.7	Req1.Data.6	Req1.Data.6	Req1.Data.6	Req1.Data.6	Req1.Data.6	Req1.Data.6	Req1.Data.6	Req1.Data.6
+
+=== TABLE 98 ===
+IV [G5:0]	IV [G5:0]
+FIXED FIELD	Invocation field
+[G5:32]	[31:0]
+Set to 0	Counter ( Incremented for every new UALink transaction)
+
+=== TABLE 99 ===
+Name	Authenticate	Encrypt	Visible on the wire?	Reason for not authenticating	Reason for not encrypting
+ReqVld	No	No	No	Not visible on the wire	Not visible on the wire
+ReqPortID	No	No	No	Not visible on the wire	Not visible on the wire
+ReqASI	Yes	No	Yes	N/A	Potentially used by switch
+ReqAuthTag	N/A	N/A	Yes	N/A	N/A
+ReqSrcPhysAccID	Yes	No	Yes	N/A	Used by switch
+ReqDstPhysAccID	Yes	No	Yes	N/A	Used by switch
+ReqTag	Yes	Yes	Yes	N/A	N/A
+ReqNumBeats	Yes	No	Yes	N/A	Used by switch
+ReqAddr	All bits are authenticated	[17:2]	Yes	N/A	Bits [56:18] | may be removed by TL due to the compression scheme
+
+=== TABLE 100 ===
+Name	Authenticate	Encrypt	Visible on the wire?	Reason for not authenticating	Reason for not encrypting
+ReqCmd	Yes	No	Yes	N/A	Used by switch
+ReqLen	Yes	No	Yes	N/A	Used by switch
+ReqMetadata	Yes	No	Yes	N/A	Modified in TL due to compression scheme
+ReqVC	No	No	Yes	Modified by switch	Modified by switch
+ReqPool	No	No	Yes	Modified by switch	Modified by switch
+
+=== TABLE 101 ===
+Name	Authenticate	Encrypt	Visible on the wire?	Reason for not authenticating	Reason for not encrypting
+RdRspVld	No	No	No	Not visible on the wire	Not visible on the wire
+RdRspPortID	No	No	No	Not visible on the wire	Not visible on the wire
+RdRspAuthTag	N/A	N/A	Yes	N/A	N/A
+RdRspSrcPhysAccID	Yes	No	Yes	N/A	Used by switch
+RdRspDstPhysAccID	Yes	No	Yes	N/A	Used by switch
+RdRspTag	Yes	Yes	Yes	N/A	N/A
+RdRspNumBeats	Yes	No	Yes	N/A	Used by switch
+
+=== TABLE 102 ===
+Name	Authenticate	Encrypt	Visible on the wire?	Reason for not authenticating	Reason for not encrypting
+RdRspData	Yes	Yes	Yes	N/A	N/A
+RdRspStatus	Yes	No	Yes	N/A	Modified in TL due to compression scheme
+RdRspOffset	Yes	No	Yes	N/A	Used by switch
+RdRspLast	Yes	No	Yes	N/A	Used by switch
+RdRspDataError	No	No	Yes	Not visible on the wire	Not visible on the wire
+RdRspVC	No	No	Yes	Modified by switch	Modified by switch
+RdRspPool	No	No	Yes	Modified by switch	Modified by switch
+
+=== TABLE 103 ===
+Name	Authenticate	Encrypt	Visible on the wire?	Reason for not authenticating	Reason for not encrypting
+WrRspVld	No	No	No	Not visible on the wire	Not visible on the wire
+WrRspPortID	No	No	No	Not visible on the wire	Not visible on the wire
+WrRspAuthTag	N/A	N/A	Yes	N/A	N/A
+WrRspSrcPhysAccID	Yes	No	Yes	N/A	Used by switch
+WrRspDstPhysAccID	Yes	No	Yes	N/A	Used by switch
+WrRspTag	Yes	Yes	Yes	N/A	N/A
+WrRspStatus	Yes	No	Yes	N/A	Modified in TL due to compression scheme
+WrRspVC	No	No	Yes	Modified by switch	Modified by switch
+WrRspPool	No	No	Yes	Modified by switch	Modified by switch
+
+=== TABLE 104 ===
+Name	Authenticate	Encrypt	Visible on the wire?	Reason for not authenticating	Reason for not encrypting
+OrigDataVld	No	No	No	Not visible on the wire	Not visible on the wire
+
+=== TABLE 105 ===
+Name	Authenticate	Encrypt	Visible on the wire?	Reason for not authenticating	Reason for not encrypting
+OrigDataPortID	No	No	No	Not visible on the wire	Not visible on the wire
+OrigData	Yes	Yes	Yes	N/A	N/A
+OrigDataByteEn	Yes	Yes	Yes	N/A	N/A
+OrigDataOffset	Yes	No	Yes	N/A	Used by switch
+OrigDataLast	Yes	No	Yes	N/A	Used by switch
+OrigDataError	No	No	No	Not visible on the wire	Not visible on the wire
+OrigDataVC	No	No	Yes	Modified by switch	Modified by switch
+OrigDataPool	No	No	Yes	Modified by switch	Modified by switch
+
+=== TABLE 106 ===
+	Write response stream epoch counter for source accelerator 1022	Write response stream epoch counter for source accelerator 1022
+Write response stream epoch | counter for source accelerator | 0	Write response stream epoch | counter for source accelerator | 0	
+Write response stream epoch | counter for source accelerator | 0	Write response stream epoch | counter for source accelerator | 0	
+
+=== TABLE 107 ===
+	Size_padded	ReqASI	ReqSrcPhysAccID	ReqDstPhysAccID	ReqTag	ReqNumBeats	ReqAddr	ReqCmd	ReqLen	ReqAttr	ReqMetadata
+AAD	G6	2	10	10		2	39	6	6	8	8
+MSG	128				11		[17:2]				
+
+=== TABLE 108 ===
+	Size_padded	OrigDataByteEn	OrigData	OrigDataOffset	OrigDataLast
+AAD	32			2	1
+MSG	640	64	512		
+
+=== TABLE 109 ===
+	Size_padded	OrigData	OrigDataOffset	OrigDataLast
+AAD	32		2	1
+
+=== TABLE 110 ===
+MSG	512	512		
+
+=== TABLE 111 ===
+	Size_padded	RdRspSrcPhysAccID	RdRspDstPhysAccID	RdRspTag	RdRspNumBeats	RdRspData	RdRspStatus	RdRspOffset	RdRspLast
+AAD	32	10	10		2		4	2	1
+MSG	640			11		512			
+
+=== TABLE 112 ===
+	Size_padded	WrRspSrcPhysAccID	WrRspDstPhysAccID	WrRspTag	WrRspStatus	RdRspLast
+AAD	32	10	10		4	1
+MSG	128			11		
+
+=== TABLE 113 ===
+AAD for Req = G6bits	AAD for Req = G6bits	AAD for Req = G6bits	AAD for Req = G6bits	AAD for Req = G6bits	AAD for Req = G6bits	AAD for Req = G6bits	AAD for Req = G6bits	AAD for Req = G6bits	AAD for Req = G6bits
+		bits	bits	bits	bits	bits	bits	bits	bits
+		7	6	5	4	3	2	1	0
+Bytes	0	ReqMetadata[7:0]	ReqMetadata[7:0]	ReqMetadata[7:0]	ReqMetadata[7:0]	ReqMetadata[7:0]	ReqMetadata[7:0]	ReqMetadata[7:0]	ReqMetadata[7:0]
+Bytes	1	ReqAttr[7:0]	ReqAttr[7:0]	ReqAttr[7:0]	ReqAttr[7:0]	ReqAttr[7:0]	ReqAttr[7:0]	ReqAttr[7:0]	ReqAttr[7:0]
+Bytes	2	ReqCmd[1:0]	ReqCmd[1:0]	ReqLen[5:0]	ReqLen[5:0]	ReqLen[5:0]	ReqLen[5:0]	ReqLen[5:0]	ReqLen[5:0]
+Bytes	3	ReqAaddr[23:18]	ReqAaddr[23:18]	ReqAaddr[23:18]	ReqAaddr[23:18]	ReqCmd[5:2]	ReqCmd[5:2]	ReqCmd[5:2]	ReqCmd[5:2]
+Bytes	4	ReqAaddr[31:24]	ReqAaddr[31:24]	ReqAaddr[31:24]	ReqAaddr[31:24]	ReqAaddr[31:24]	ReqAaddr[31:24]	ReqAaddr[31:24]	ReqAaddr[31:24]
+Bytes	5	ReqAaddr[3G:32]	ReqAaddr[3G:32]	ReqAaddr[3G:32]	ReqAaddr[3G:32]	ReqAaddr[3G:32]	ReqAaddr[3G:32]	ReqAaddr[3G:32]	ReqAaddr[3G:32]
+Bytes	6	ReqAaddr[47:40]	ReqAaddr[47:40]	ReqAaddr[47:40]	ReqAaddr[47:40]	ReqAaddr[47:40]	ReqAaddr[47:40]	ReqAaddr[47:40]	ReqAaddr[47:40]
+Bytes	7	ReqAaddr[55:48]	ReqAaddr[55:48]	ReqAaddr[55:48]	ReqAaddr[55:48]	ReqAaddr[55:48]	ReqAaddr[55:48]	ReqAaddr[55:48]	ReqAaddr[55:48]
+Bytes	8	ReqDstPhysAccID[3:0]	ReqDstPhysAccID[3:0]	ReqDstPhysAccID[3:0]	ReqDstPhysAccID[3:0]	ReqNBeats[1:0]	ReqNBeats[1:0]	ReqAaddr[57:56]	ReqAaddr[57:56]
+Bytes	G	ReqSrc..ID[1:0]	ReqSrc..ID[1:0]	ReqDstPhysAccID[G:4]	ReqDstPhysAccID[G:4]	ReqDstPhysAccID[G:4]	ReqDstPhysAccID[G:4]	ReqDstPhysAccID[G:4]	ReqDstPhysAccID[G:4]
+Bytes	10	ReqSrcPhysAccID[G:2]	ReqSrcPhysAccID[G:2]	ReqSrcPhysAccID[G:2]	ReqSrcPhysAccID[G:2]	ReqSrcPhysAccID[G:2]	ReqSrcPhysAccID[G:2]	ReqSrcPhysAccID[G:2]	ReqSrcPhysAccID[G:2]
+Bytes	11	0`s Padding	0`s Padding	0`s Padding	0`s Padding	0`s Padding	0`s Padding	ReqASI[0:1]	ReqASI[0:1]
+
+=== TABLE 114 ===
+MSG for Req (no write req.)	MSG for Req (no write req.)	MSG for Req (no write req.)	MSG for Req (no write req.)	MSG for Req (no write req.)	MSG for Req (no write req.)	MSG for Req (no write req.)	MSG for Req (no write req.)	MSG for Req (no write req.)	MSG for Req (no write req.)
+		bits	bits	bits	bits	bits	bits	bits	bits
+		7	6	5	4	3	2	1	0
+Bytes	0	ReqAaddr[G:2]	ReqAaddr[G:2]	ReqAaddr[G:2]	ReqAaddr[G:2]	ReqAaddr[G:2]	ReqAaddr[G:2]	ReqAaddr[G:2]	ReqAaddr[G:2]
+Bytes	1	ReqAaddr[17:10]	ReqAaddr[17:10]	ReqAaddr[17:10]	ReqAaddr[17:10]	ReqAaddr[17:10]	ReqAaddr[17:10]	ReqAaddr[17:10]	ReqAaddr[17:10]
+Bytes	2	ReqTag[7:0]	ReqTag[7:0]	ReqTag[7:0]	ReqTag[7:0]	ReqTag[7:0]	ReqTag[7:0]	ReqTag[7:0]	ReqTag[7:0]
+Bytes	3	0`s Padding	0`s Padding	0`s Padding	0`s Padding	0`s Padding	ReqTag[10:8]	ReqTag[10:8]	ReqTag[10:8]
+Bytes	4	0`s Padding	0`s Padding	0`s Padding	0`s Padding	0`s Padding	0`s Padding	0`s Padding	0`s Padding
+Bytes	5	0`s Padding	0`s Padding	0`s Padding	0`s Padding	0`s Padding	0`s Padding	0`s Padding	0`s Padding
+Bytes	6	0`s Padding	0`s Padding	0`s Padding	0`s Padding	0`s Padding	0`s Padding	0`s Padding	0`s Padding
+Bytes	7	0`s Padding	0`s Padding	0`s Padding	0`s Padding	0`s Padding	0`s Padding	0`s Padding	0`s Padding
+Bytes	8	0`s Padding	0`s Padding	0`s Padding	0`s Padding	0`s Padding	0`s Padding	0`s Padding	0`s Padding
+Bytes	G	0`s Padding	0`s Padding	0`s Padding	0`s Padding	0`s Padding	0`s Padding	0`s Padding	0`s Padding
+Bytes	10	0`s Padding	0`s Padding	0`s Padding	0`s Padding	0`s Padding	0`s Padding	0`s Padding	0`s Padding
+Bytes	11	0`s Padding	0`s Padding	0`s Padding	0`s Padding	0`s Padding	0`s Padding	0`s Padding	0`s Padding
+Bytes	12	0`s Padding	0`s Padding	0`s Padding	0`s Padding	0`s Padding	0`s Padding	0`s Padding	0`s Padding
+Bytes	13	0`s Padding	0`s Padding	0`s Padding	0`s Padding	0`s Padding	0`s Padding	0`s Padding	0`s Padding
+Bytes	14	0`s Padding	0`s Padding	0`s Padding	0`s Padding	0`s Padding	0`s Padding	0`s Padding	0`s Padding
+Bytes	15	0`s Padding	0`s Padding	0`s Padding	0`s Padding	0`s Padding	0`s Padding	0`s Padding	0`s Padding
+
+=== TABLE 115 ===
+AAD for Wr Req or UPLI Write Message | 1st beat = 128 bits	AAD for Wr Req or UPLI Write Message | 1st beat = 128 bits	AAD for Wr Req or UPLI Write Message | 1st beat = 128 bits	AAD for Wr Req or UPLI Write Message | 1st beat = 128 bits	AAD for Wr Req or UPLI Write Message | 1st beat = 128 bits	AAD for Wr Req or UPLI Write Message | 1st beat = 128 bits	AAD for Wr Req or UPLI Write Message | 1st beat = 128 bits	AAD for Wr Req or UPLI Write Message | 1st beat = 128 bits	AAD for Wr Req or UPLI Write Message | 1st beat = 128 bits	AAD for Wr Req or UPLI Write Message | 1st beat = 128 bits
+		bits	bits	bits	bits	bits	bits	bits	bits
+		7	6	5	4	3	2	1	0
+Bytes	0	ReqMetadata[7:0]	ReqMetadata[7:0]	ReqMetadata[7:0]	ReqMetadata[7:0]	ReqMetadata[7:0]	ReqMetadata[7:0]	ReqMetadata[7:0]	ReqMetadata[7:0]
+Bytes	1	ReqAttr[7:0]	ReqAttr[7:0]	ReqAttr[7:0]	ReqAttr[7:0]	ReqAttr[7:0]	ReqAttr[7:0]	ReqAttr[7:0]	ReqAttr[7:0]
+Bytes	2	ReqCmd[1:0]	ReqCmd[1:0]	ReqLen[5:0]	ReqLen[5:0]	ReqLen[5:0]	ReqLen[5:0]	ReqLen[5:0]	ReqLen[5:0]
+Bytes	3	ReqAaddr[23:18]	ReqAaddr[23:18]	ReqAaddr[23:18]	ReqAaddr[23:18]	ReqCmd[5:2]	ReqCmd[5:2]	ReqCmd[5:2]	ReqCmd[5:2]
+Bytes	4	ReqAaddr[31:24]	ReqAaddr[31:24]	ReqAaddr[31:24]	ReqAaddr[31:24]	ReqAaddr[31:24]	ReqAaddr[31:24]	ReqAaddr[31:24]	ReqAaddr[31:24]
+Bytes	5	ReqAaddr[3G:32]	ReqAaddr[3G:32]	ReqAaddr[3G:32]	ReqAaddr[3G:32]	ReqAaddr[3G:32]	ReqAaddr[3G:32]	ReqAaddr[3G:32]	ReqAaddr[3G:32]
+Bytes	6	ReqAaddr[47:40]	ReqAaddr[47:40]	ReqAaddr[47:40]	ReqAaddr[47:40]	ReqAaddr[47:40]	ReqAaddr[47:40]	ReqAaddr[47:40]	ReqAaddr[47:40]
+Bytes	7	ReqAaddr[55:48]	ReqAaddr[55:48]	ReqAaddr[55:48]	ReqAaddr[55:48]	ReqAaddr[55:48]	ReqAaddr[55:48]	ReqAaddr[55:48]	ReqAaddr[55:48]
+
+=== TABLE 116 ===
+	8	ReqDstPhysAccID[3:0]	ReqDstPhysAccID[3:0]	ReqNBeats[1:0]	ReqNBeats[1:0]	ReqAaddr[57:56]	ReqAaddr[57:56]
+	G	ReqSrc..ID[1:0]	ReqDstPhysAccID[G:4]	ReqDstPhysAccID[G:4]	ReqDstPhysAccID[G:4]	ReqDstPhysAccID[G:4]	ReqDstPhysAccID[G:4]
+	10	ReqSrcPhysAccID[G:2]	ReqSrcPhysAccID[G:2]	ReqSrcPhysAccID[G:2]	ReqSrcPhysAccID[G:2]	ReqSrcPhysAccID[G:2]	ReqSrcPhysAccID[G:2]
+	11	0`s Padding	0`s Padding	0`s Padding	0`s Padding	ReqASI[0:1]	ReqASI[0:1]
+	12	0`s Padding	0`s Padding	0`s Padding	OrigDataOffset[1:0]	OrigDataOffset[1:0]	Last
+	13	0`s Padding	0`s Padding	0`s Padding	0`s Padding	0`s Padding	0`s Padding
+	14	0`s Padding	0`s Padding	0`s Padding	0`s Padding	0`s Padding	0`s Padding
+	15	0`s Padding	0`s Padding	0`s Padding	0`s Padding	0`s Padding	0`s Padding
+
+=== TABLE 117 ===
+MSG for Wr Req w. Byte Enable or UPLI Write | Message of the 1st beat	MSG for Wr Req w. Byte Enable or UPLI Write | Message of the 1st beat	MSG for Wr Req w. Byte Enable or UPLI Write | Message of the 1st beat	MSG for Wr Req w. Byte Enable or UPLI Write | Message of the 1st beat	MSG for Wr Req w. Byte Enable or UPLI Write | Message of the 1st beat	MSG for Wr Req w. Byte Enable or UPLI Write | Message of the 1st beat	MSG for Wr Req w. Byte Enable or UPLI Write | Message of the 1st beat	MSG for Wr Req w. Byte Enable or UPLI Write | Message of the 1st beat	MSG for Wr Req w. Byte Enable or UPLI Write | Message of the 1st beat	MSG for Wr Req w. Byte Enable or UPLI Write | Message of the 1st beat
+1st Counter	1st Counter	Bits	Bits	Bits	Bits	Bits	Bits	Bits	Bits
+1st Counter	1st Counter	7	6	5	4	3	2	1	0
+Bytes	0	ReqAaddr[G:2]	ReqAaddr[G:2]	ReqAaddr[G:2]	ReqAaddr[G:2]	ReqAaddr[G:2]	ReqAaddr[G:2]	ReqAaddr[G:2]	ReqAaddr[G:2]
+Bytes	1	ReqAaddr[17:10]	ReqAaddr[17:10]	ReqAaddr[17:10]	ReqAaddr[17:10]	ReqAaddr[17:10]	ReqAaddr[17:10]	ReqAaddr[17:10]	ReqAaddr[17:10]
+Bytes	2	ReqTag[7:0]	ReqTag[7:0]	ReqTag[7:0]	ReqTag[7:0]	ReqTag[7:0]	ReqTag[7:0]	ReqTag[7:0]	ReqTag[7:0]
+Bytes	3	0`s Padding	0`s Padding	0`s Padding	0`s Padding	0`s Padding	ReqTag[10:8]	ReqTag[10:8]	ReqTag[10:8]
+Bytes	4	ByteEnable[7:0]	ByteEnable[7:0]	ByteEnable[7:0]	ByteEnable[7:0]	ByteEnable[7:0]	ByteEnable[7:0]	ByteEnable[7:0]	ByteEnable[7:0]
+Bytes	5	ByteEnable[15:8]	ByteEnable[15:8]	ByteEnable[15:8]	ByteEnable[15:8]	ByteEnable[15:8]	ByteEnable[15:8]	ByteEnable[15:8]	ByteEnable[15:8]
+Bytes	6	ByteEnable[23:16]	ByteEnable[23:16]	ByteEnable[23:16]	ByteEnable[23:16]	ByteEnable[23:16]	ByteEnable[23:16]	ByteEnable[23:16]	ByteEnable[23:16]
+Bytes	7	ByteEnable[31:24]	ByteEnable[31:24]	ByteEnable[31:24]	ByteEnable[31:24]	ByteEnable[31:24]	ByteEnable[31:24]	ByteEnable[31:24]	ByteEnable[31:24]
+Bytes	8	ByteEnable[3G:32]	ByteEnable[3G:32]	ByteEnable[3G:32]	ByteEnable[3G:32]	ByteEnable[3G:32]	ByteEnable[3G:32]	ByteEnable[3G:32]	ByteEnable[3G:32]
+Bytes	G	ByteEnable[47:40]	ByteEnable[47:40]	ByteEnable[47:40]	ByteEnable[47:40]	ByteEnable[47:40]	ByteEnable[47:40]	ByteEnable[47:40]	ByteEnable[47:40]
+Bytes	10	ByteEnable[55:48]	ByteEnable[55:48]	ByteEnable[55:48]	ByteEnable[55:48]	ByteEnable[55:48]	ByteEnable[55:48]	ByteEnable[55:48]	ByteEnable[55:48]
+Bytes	11	ByteEnable[63:56]	ByteEnable[63:56]	ByteEnable[63:56]	ByteEnable[63:56]	ByteEnable[63:56]	ByteEnable[63:56]	ByteEnable[63:56]	ByteEnable[63:56]
+Bytes	12	0`s Padding	0`s Padding	0`s Padding	0`s Padding	0`s Padding	0`s Padding	0`s Padding	0`s Padding
+Bytes	13	0`s Padding	0`s Padding	0`s Padding	0`s Padding	0`s Padding	0`s Padding	0`s Padding	0`s Padding
+Bytes	14	0`s Padding	0`s Padding	0`s Padding	0`s Padding	0`s Padding	0`s Padding	0`s Padding	0`s Padding
+Bytes	15	0`s Padding	0`s Padding	0`s Padding	0`s Padding	0`s Padding	0`s Padding	0`s Padding	0`s Padding
+
+=== TABLE 118 ===
+2nd Counter	bits	bits	bits	bits	bits	bits	bits	bits
+2nd Counter	7	6	5	4	3	2	1	0
+Bytes [0-15]	OrigData[127-0]	OrigData[127-0]	OrigData[127-0]	OrigData[127-0]	OrigData[127-0]	OrigData[127-0]	OrigData[127-0]	OrigData[127-0]
+
+=== TABLE 119 ===
+3rd Counter	bits	bits	bits	bits	bits	bits	bits	bits
+3rd Counter	7	6	5	4	3	2	1	0
+Bytes [0-15]	OrigData[255-127]	OrigData[255-127]	OrigData[255-127]	OrigData[255-127]	OrigData[255-127]	OrigData[255-127]	OrigData[255-127]	OrigData[255-127]
+
+=== TABLE 120 ===
+4th Counter	bits	bits	bits	bits	bits	bits	bits	bits
+4th Counter	7	6	5	4	3	2	1	0
+Bytes [0-15]	OrigData[383-256]	OrigData[383-256]	OrigData[383-256]	OrigData[383-256]	OrigData[383-256]	OrigData[383-256]	OrigData[383-256]	OrigData[383-256]
+
+=== TABLE 121 ===
+5th Counter	bits	bits	bits	bits	bits	bits	bits	bits
+5th Counter	7	6	5	4	3	2	1	0
+Bytes [0-15]	OrigData[511-384]	OrigData[511-384]	OrigData[511-384]	OrigData[511-384]	OrigData[511-384]	OrigData[511-384]	OrigData[511-384]	OrigData[511-384]
+
+=== TABLE 122 ===
+MSG for Full-word Wr Req (w/o Byte Enable) of the 1st beat	MSG for Full-word Wr Req (w/o Byte Enable) of the 1st beat	MSG for Full-word Wr Req (w/o Byte Enable) of the 1st beat	MSG for Full-word Wr Req (w/o Byte Enable) of the 1st beat	MSG for Full-word Wr Req (w/o Byte Enable) of the 1st beat	MSG for Full-word Wr Req (w/o Byte Enable) of the 1st beat	MSG for Full-word Wr Req (w/o Byte Enable) of the 1st beat	MSG for Full-word Wr Req (w/o Byte Enable) of the 1st beat	MSG for Full-word Wr Req (w/o Byte Enable) of the 1st beat	MSG for Full-word Wr Req (w/o Byte Enable) of the 1st beat
+		bits	bits	bits	bits	bits	bits	bits	bits
+		7	6	5	4	3	2	1	0
+Bytes	0	ReqAaddr[G:2]	ReqAaddr[G:2]	ReqAaddr[G:2]	ReqAaddr[G:2]	ReqAaddr[G:2]	ReqAaddr[G:2]	ReqAaddr[G:2]	ReqAaddr[G:2]
+Bytes	1	ReqAaddr[17:10]	ReqAaddr[17:10]	ReqAaddr[17:10]	ReqAaddr[17:10]	ReqAaddr[17:10]	ReqAaddr[17:10]	ReqAaddr[17:10]	ReqAaddr[17:10]
+Bytes	2	ReqTag[7:0]	ReqTag[7:0]	ReqTag[7:0]	ReqTag[7:0]	ReqTag[7:0]	ReqTag[7:0]	ReqTag[7:0]	ReqTag[7:0]
+Bytes	3	0`s Padding	0`s Padding	0`s Padding	0`s Padding	0`s Padding	ReqTag[10:8]	ReqTag[10:8]	ReqTag[10:8]
+Bytes	4	0`s Padding	0`s Padding	0`s Padding	0`s Padding	0`s Padding	0`s Padding	0`s Padding	0`s Padding
+Bytes	5	0`s Padding	0`s Padding	0`s Padding	0`s Padding	0`s Padding	0`s Padding	0`s Padding	0`s Padding
+Bytes	6	0`s Padding	0`s Padding	0`s Padding	0`s Padding	0`s Padding	0`s Padding	0`s Padding	0`s Padding
+Bytes	7	0`s Padding	0`s Padding	0`s Padding	0`s Padding	0`s Padding	0`s Padding	0`s Padding	0`s Padding
+Bytes	8	0`s Padding	0`s Padding	0`s Padding	0`s Padding	0`s Padding	0`s Padding	0`s Padding	0`s Padding
+Bytes	G	0`s Padding	0`s Padding	0`s Padding	0`s Padding	0`s Padding	0`s Padding	0`s Padding	0`s Padding
+Bytes	10	0`s Padding	0`s Padding	0`s Padding	0`s Padding	0`s Padding	0`s Padding	0`s Padding	0`s Padding
+Bytes	11	0`s Padding	0`s Padding	0`s Padding	0`s Padding	0`s Padding	0`s Padding	0`s Padding	0`s Padding
+Bytes	12	0`s Padding	0`s Padding	0`s Padding	0`s Padding	0`s Padding	0`s Padding	0`s Padding	0`s Padding
+Bytes	13	0`s Padding	0`s Padding	0`s Padding	0`s Padding	0`s Padding	0`s Padding	0`s Padding	0`s Padding
+Bytes	14	0`s Padding	0`s Padding	0`s Padding	0`s Padding	0`s Padding	0`s Padding	0`s Padding	0`s Padding
+Bytes	15	0`s Padding	0`s Padding	0`s Padding	0`s Padding	0`s Padding	0`s Padding	0`s Padding	0`s Padding
+
+=== TABLE 123 ===
+2nd Counter	bits	bits	bits	bits	bits	bits	bits	bits
+2nd Counter	7	6	5	4	3	2	1	0
+Bytes [0-15]	OrigData[127-0]	OrigData[127-0]	OrigData[127-0]	OrigData[127-0]	OrigData[127-0]	OrigData[127-0]	OrigData[127-0]	OrigData[127-0]
+
+=== TABLE 124 ===
+3rd Counter	bits	bits	bits	bits	bits	bits	bits	bits
+3rd Counter	7	6	5	4	3	2	1	0
+Bytes [0-15]	OrigData[255-127]	OrigData[255-127]	OrigData[255-127]	OrigData[255-127]	OrigData[255-127]	OrigData[255-127]	OrigData[255-127]	OrigData[255-127]
+
+=== TABLE 125 ===
+4th Counter	bits	bits	bits	bits	bits	bits	bits	bits
+4th Counter	7	6	5	4	3	2	1	0
+Bytes [0-15]	OrigData[383-256]	OrigData[383-256]	OrigData[383-256]	OrigData[383-256]	OrigData[383-256]	OrigData[383-256]	OrigData[383-256]	OrigData[383-256]
+
+=== TABLE 126 ===
+5th Counter	bits	bits	bits	bits	bits	bits	bits	bits
+5th Counter	7	6	5	4	3	2	1	0
+Bytes [0-15]	OrigData[511-384]	OrigData[511-384]	OrigData[511-384]	OrigData[511-384]	OrigData[511-384]	OrigData[511-384]	OrigData[511-384]	OrigData[511-384]
+
+=== TABLE 127 ===
+AAD Orig Data other beats (not 1st) = 32b	AAD Orig Data other beats (not 1st) = 32b	AAD Orig Data other beats (not 1st) = 32b	AAD Orig Data other beats (not 1st) = 32b	AAD Orig Data other beats (not 1st) = 32b	AAD Orig Data other beats (not 1st) = 32b	AAD Orig Data other beats (not 1st) = 32b	AAD Orig Data other beats (not 1st) = 32b	AAD Orig Data other beats (not 1st) = 32b	AAD Orig Data other beats (not 1st) = 32b
+		bits	bits	bits	bits	bits	bits	bits	bits
+		7	6	5	4	3	2	1	0
+Bytes	0	0`s Padding	0`s Padding	0`s Padding	0`s Padding	0`s Padding	OrigDataOffset[1:0]	OrigDataOffset[1:0]	Last
+Bytes	1	0`s Padding	0`s Padding	0`s Padding	0`s Padding	0`s Padding	0`s Padding	0`s Padding	0`s Padding
+Bytes	2	0`s Padding	0`s Padding	0`s Padding	0`s Padding	0`s Padding	0`s Padding	0`s Padding	0`s Padding
+Bytes	3	0`s Padding	0`s Padding	0`s Padding	0`s Padding	0`s Padding	0`s Padding	0`s Padding	0`s Padding
+
+=== TABLE 128 ===
+MSG Orig Data other beats (not 1st)
+
+=== TABLE 129 ===
+1st Counter	1st Counter	bits	bits	bits	bits	bits	bits	bits	bits
+1st Counter	1st Counter	7	6	5	4	3	2	1	0
+Bytes	0	0`s Padding	0`s Padding	0`s Padding	0`s Padding	0`s Padding	0`s Padding	0`s Padding	0`s Padding
+Bytes	1	0`s Padding	0`s Padding	0`s Padding	0`s Padding	0`s Padding	0`s Padding	0`s Padding	0`s Padding
+Bytes	2	0`s Padding	0`s Padding	0`s Padding	0`s Padding	0`s Padding	0`s Padding	0`s Padding	0`s Padding
+Bytes	3	0`s Padding	0`s Padding	0`s Padding	0`s Padding	0`s Padding	0`s Padding	0`s Padding	0`s Padding
+Bytes	4	ByteEnable[7:0]	ByteEnable[7:0]	ByteEnable[7:0]	ByteEnable[7:0]	ByteEnable[7:0]	ByteEnable[7:0]	ByteEnable[7:0]	ByteEnable[7:0]
+Bytes	5	ByteEnable[15:8]	ByteEnable[15:8]	ByteEnable[15:8]	ByteEnable[15:8]	ByteEnable[15:8]	ByteEnable[15:8]	ByteEnable[15:8]	ByteEnable[15:8]
+Bytes	6	ByteEnable[23:16]	ByteEnable[23:16]	ByteEnable[23:16]	ByteEnable[23:16]	ByteEnable[23:16]	ByteEnable[23:16]	ByteEnable[23:16]	ByteEnable[23:16]
+Bytes	7	ByteEnable[31:24]	ByteEnable[31:24]	ByteEnable[31:24]	ByteEnable[31:24]	ByteEnable[31:24]	ByteEnable[31:24]	ByteEnable[31:24]	ByteEnable[31:24]
+Bytes	8	ByteEnable[3G:32]	ByteEnable[3G:32]	ByteEnable[3G:32]	ByteEnable[3G:32]	ByteEnable[3G:32]	ByteEnable[3G:32]	ByteEnable[3G:32]	ByteEnable[3G:32]
+Bytes	G	ByteEnable[47:40]	ByteEnable[47:40]	ByteEnable[47:40]	ByteEnable[47:40]	ByteEnable[47:40]	ByteEnable[47:40]	ByteEnable[47:40]	ByteEnable[47:40]
+Bytes	10	ByteEnable[55:48]	ByteEnable[55:48]	ByteEnable[55:48]	ByteEnable[55:48]	ByteEnable[55:48]	ByteEnable[55:48]	ByteEnable[55:48]	ByteEnable[55:48]
+Bytes	11	ByteEnable[63:56]	ByteEnable[63:56]	ByteEnable[63:56]	ByteEnable[63:56]	ByteEnable[63:56]	ByteEnable[63:56]	ByteEnable[63:56]	ByteEnable[63:56]
+Bytes	12	0`s Padding	0`s Padding	0`s Padding	0`s Padding	0`s Padding	0`s Padding	0`s Padding	0`s Padding
+Bytes	13	0`s Padding	0`s Padding	0`s Padding	0`s Padding	0`s Padding	0`s Padding	0`s Padding	0`s Padding
+Bytes	14	0`s Padding	0`s Padding	0`s Padding	0`s Padding	0`s Padding	0`s Padding	0`s Padding	0`s Padding
+Bytes	15	0`s Padding	0`s Padding	0`s Padding	0`s Padding	0`s Padding	0`s Padding	0`s Padding	0`s Padding
+
+=== TABLE 130 ===
+2nd Counter	bits	bits	bits	bits	bits	bits	bits	bits
+2nd Counter	7	6	5	4	3	2	1	0
+Bytes [0-15]	OrigData[127-0]	OrigData[127-0]	OrigData[127-0]	OrigData[127-0]	OrigData[127-0]	OrigData[127-0]	OrigData[127-0]	OrigData[127-0]
+
+=== TABLE 131 ===
+3rd Counter	bits	bits	bits	bits	bits	bits	bits	bits
+3rd Counter	7	6	5	4	3	2	1	0
+Bytes [0-15]	OrigData[255-127]	OrigData[255-127]	OrigData[255-127]	OrigData[255-127]	OrigData[255-127]	OrigData[255-127]	OrigData[255-127]	OrigData[255-127]
+
+=== TABLE 132 ===
+4th Counter	bits	bits	bits	bits	bits	bits	bits	bits
+4th Counter	7	6	5	4	3	2	1	0
+Bytes [0-15]	OrigData[383-256]	OrigData[383-256]	OrigData[383-256]	OrigData[383-256]	OrigData[383-256]	OrigData[383-256]	OrigData[383-256]	OrigData[383-256]
+
+=== TABLE 133 ===
+5th Counter	bits	bits	bits	bits	bits	bits	bits	bits
+5th Counter	7	6	5	4	3	2	1	0
+Bytes [0-15]	OrigData[511-384]	OrigData[511-384]	OrigData[511-384]	OrigData[511-384]	OrigData[511-384]	OrigData[511-384]	OrigData[511-384]	OrigData[511-384]
+
+=== TABLE 134 ===
+	7	6	5	4	3	2	1	0
+Bytes [0-15]	OrigData[127-0]	OrigData[127-0]	OrigData[127-0]	OrigData[127-0]	OrigData[127-0]	OrigData[127-0]	OrigData[127-0]	OrigData[127-0]
+
+=== TABLE 135 ===
+2nd Counter	bits	bits	bits	bits	bits	bits	bits	bits
+2nd Counter	7	6	5	4	3	2	1	0
+Bytes [0-15]	OrigData[255-127]	OrigData[255-127]	OrigData[255-127]	OrigData[255-127]	OrigData[255-127]	OrigData[255-127]	OrigData[255-127]	OrigData[255-127]
+
+=== TABLE 136 ===
+3rd Counter	bits	bits	bits	bits	bits	bits	bits	bits
+3rd Counter	7	6	5	4	3	2	1	0
+Bytes [0-15]	OrigData[383-256]	OrigData[383-256]	OrigData[383-256]	OrigData[383-256]	OrigData[383-256]	OrigData[383-256]	OrigData[383-256]	OrigData[383-256]
+
+=== TABLE 137 ===
+4th Counter	bits	bits	bits	bits	bits	bits	bits	bits
+4th Counter	7	6	5	4	3	2	1	0
+Bytes [0-15]	OrigData[511-384]	OrigData[511-384]	OrigData[511-384]	OrigData[511-384]	OrigData[511-384]	OrigData[511-384]	OrigData[511-384]	OrigData[511-384]
+
+=== TABLE 138 ===
+AAD Read Response = 32b	AAD Read Response = 32b	AAD Read Response = 32b	AAD Read Response = 32b	AAD Read Response = 32b	AAD Read Response = 32b	AAD Read Response = 32b	AAD Read Response = 32b	AAD Read Response = 32b	AAD Read Response = 32b
+		bits	bits	bits	bits	bits	bits	bits	bits
+		7	6	5	4	3	2	1	0
+Bytes	0	Beats[0]	RdRspStatus[3:0]	RdRspStatus[3:0]	RdRspStatus[3:0]	RdRspStatus[3:0]	RdrspOffset[1:0]	RdrspOffset[1:0]	Last
+Bytes	1	RdRspDstPhysAccID[6:0]	RdRspDstPhysAccID[6:0]	RdRspDstPhysAccID[6:0]	RdRspDstPhysAccID[6:0]	RdRspDstPhysAccID[6:0]	RdRspDstPhysAccID[6:0]	RdRspDstPhysAccID[6:0]	Beats[1]
+Bytes	2	ReqSrcPhysAccID[4:0]	ReqSrcPhysAccID[4:0]	ReqSrcPhysAccID[4:0]	ReqSrcPhysAccID[4:0]	ReqSrcPhysAccID[4:0]	RdRspDstPhysAccID[G:7]	RdRspDstPhysAccID[G:7]	RdRspDstPhysAccID[G:7]
+Bytes	3	0`s Padding	0`s Padding	0`s Padding	RdRspSrcPhysAccID[G:5]	RdRspSrcPhysAccID[G:5]	RdRspSrcPhysAccID[G:5]	RdRspSrcPhysAccID[G:5]	RdRspSrcPhysAccID[G:5]
+
+=== TABLE 139 ===
+1st Counter	1st Counter	bits	bits	bits	bits	bits	bits	bits	bits
+1st Counter	1st Counter	7	6	5	4	3	2	1	0
+Bytes	0	WrRspTag[7:0]	WrRspTag[7:0]	WrRspTag[7:0]	WrRspTag[7:0]	WrRspTag[7:0]	WrRspTag[7:0]	WrRspTag[7:0]	WrRspTag[7:0]
+Bytes	1	0`s Padding	0`s Padding	0`s Padding	0`s Padding	0`s Padding	WrRspTag[10:8]	WrRspTag[10:8]	WrRspTag[10:8]
+Bytes	2	0`s Padding	0`s Padding	0`s Padding	0`s Padding	0`s Padding	0`s Padding	0`s Padding	0`s Padding
+Bytes	3	0`s Padding	0`s Padding	0`s Padding	0`s Padding	0`s Padding	0`s Padding	0`s Padding	0`s Padding
+Bytes	4	0`s Padding	0`s Padding	0`s Padding	0`s Padding	0`s Padding	0`s Padding	0`s Padding	0`s Padding
+Bytes	5	0`s Padding	0`s Padding	0`s Padding	0`s Padding	0`s Padding	0`s Padding	0`s Padding	0`s Padding
+Bytes	6	0`s Padding	0`s Padding	0`s Padding	0`s Padding	0`s Padding	0`s Padding	0`s Padding	0`s Padding
+Bytes	7	0`s Padding	0`s Padding	0`s Padding	0`s Padding	0`s Padding	0`s Padding	0`s Padding	0`s Padding
+Bytes	8	0`s Padding	0`s Padding	0`s Padding	0`s Padding	0`s Padding	0`s Padding	0`s Padding	0`s Padding
+Bytes	G	0`s Padding	0`s Padding	0`s Padding	0`s Padding	0`s Padding	0`s Padding	0`s Padding	0`s Padding
+Bytes	10	0`s Padding	0`s Padding	0`s Padding	0`s Padding	0`s Padding	0`s Padding	0`s Padding	0`s Padding
+Bytes	11	0`s Padding	0`s Padding	0`s Padding	0`s Padding	0`s Padding	0`s Padding	0`s Padding	0`s Padding
+Bytes	12	0`s Padding	0`s Padding	0`s Padding	0`s Padding	0`s Padding	0`s Padding	0`s Padding	0`s Padding
+Bytes	13	0`s Padding	0`s Padding	0`s Padding	0`s Padding	0`s Padding	0`s Padding	0`s Padding	0`s Padding
+Bytes	14	0`s Padding	0`s Padding	0`s Padding	0`s Padding	0`s Padding	0`s Padding	0`s Padding	0`s Padding
+Bytes	15	0`s Padding	0`s Padding	0`s Padding	0`s Padding	0`s Padding	0`s Padding	0`s Padding	0`s Padding
+
+=== TABLE 140 ===
+2nd Counter	bits	bits	bits	bits	bits	bits	bits	bits
+2nd Counter	7	6	5	4	3	2	1	0
+Bytes [0-15]	RdRspData[127-0]	RdRspData[127-0]	RdRspData[127-0]	RdRspData[127-0]	RdRspData[127-0]	RdRspData[127-0]	RdRspData[127-0]	RdRspData[127-0]
+
+=== TABLE 141 ===
+3rd Counter	bits	bits	bits	bits	bits	bits	bits	bits
+3rd Counter	7	6	5	4	3	2	1	0
+Bytes [0-15]	RdRspData[255-127]	RdRspData[255-127]	RdRspData[255-127]	RdRspData[255-127]	RdRspData[255-127]	RdRspData[255-127]	RdRspData[255-127]	RdRspData[255-127]
+
+=== TABLE 142 ===
+4th Counter	bits	bits	bits	bits	bits	bits	bits	bits
+4th Counter	7	6	5	4	3	2	1	0
+Bytes [0-15]	RdRspData[383-256]	RdRspData[383-256]	RdRspData[383-256]	RdRspData[383-256]	RdRspData[383-256]	RdRspData[383-256]	RdRspData[383-256]	RdRspData[383-256]
+
+=== TABLE 143 ===
+5th Counter	bits	bits	bits	bits	bits	bits	bits	bits
+5th Counter	7	6	5	4	3	2	1	0
+Bytes [0-15]	RdRspData[511-384]	RdRspData[511-384]	RdRspData[511-384]	RdRspData[511-384]	RdRspData[511-384]	RdRspData[511-384]	RdRspData[511-384]	RdRspData[511-384]
+
+=== TABLE 144 ===
+AAD Write response = 32b	AAD Write response = 32b	AAD Write response = 32b	AAD Write response = 32b	AAD Write response = 32b	AAD Write response = 32b	AAD Write response = 32b	AAD Write response = 32b	AAD Write response = 32b	AAD Write response = 32b
+		bits	bits	bits	bits	bits	bits	bits	bits
+		7	6	5	4	3	2	1	0
+Bytes	0	WrRspDstPhysAccID[3:0]	WrRspDstPhysAccID[3:0]	WrRspDstPhysAccID[3:0]	WrRspDstPhysAccID[3:0]	WrRspStatus[3:0]	WrRspStatus[3:0]	WrRspStatus[3:0]	WrRspStatus[3:0]
+Bytes	1	WrRspSrcPhysAccID[1:0]	WrRspSrcPhysAccID[1:0]	WrRspDstPhysAccID[G:4]	WrRspDstPhysAccID[G:4]	WrRspDstPhysAccID[G:4]	WrRspDstPhysAccID[G:4]	WrRspDstPhysAccID[G:4]	WrRspDstPhysAccID[G:4]
+Bytes	2	WrRspSrcPhysAccID[G:2]	WrRspSrcPhysAccID[G:2]	WrRspSrcPhysAccID[G:2]	WrRspSrcPhysAccID[G:2]	WrRspSrcPhysAccID[G:2]	WrRspSrcPhysAccID[G:2]	WrRspSrcPhysAccID[G:2]	WrRspSrcPhysAccID[G:2]
+Bytes	3	0`s Padding	0`s Padding	0`s Padding	0`s Padding	0`s Padding	0`s Padding	0`s Padding	0`s Padding
+
+=== TABLE 145 ===
+MSG Write response = 128b	MSG Write response = 128b	MSG Write response = 128b	MSG Write response = 128b	MSG Write response = 128b	MSG Write response = 128b	MSG Write response = 128b	MSG Write response = 128b	MSG Write response = 128b	MSG Write response = 128b
+		bits	bits	bits	bits	bits	bits	bits	bits
+		7	6	5	4	3	2	1	0
+Bytes	0	WrRspTag[7:0]	WrRspTag[7:0]	WrRspTag[7:0]	WrRspTag[7:0]	WrRspTag[7:0]	WrRspTag[7:0]	WrRspTag[7:0]	WrRspTag[7:0]
+Bytes	1	0`s Padding	0`s Padding	0`s Padding	0`s Padding	0`s Padding	WrRspTag[10:8]	WrRspTag[10:8]	WrRspTag[10:8]
+Bytes	2	0`s Padding	0`s Padding	0`s Padding	0`s Padding	0`s Padding	0`s Padding	0`s Padding	0`s Padding
+Bytes	3	0`s Padding	0`s Padding	0`s Padding	0`s Padding	0`s Padding	0`s Padding	0`s Padding	0`s Padding
+Bytes	4	0`s Padding	0`s Padding	0`s Padding	0`s Padding	0`s Padding	0`s Padding	0`s Padding	0`s Padding
+Bytes	5	0`s Padding	0`s Padding	0`s Padding	0`s Padding	0`s Padding	0`s Padding	0`s Padding	0`s Padding
+Bytes	6	0`s Padding	0`s Padding	0`s Padding	0`s Padding	0`s Padding	0`s Padding	0`s Padding	0`s Padding
+Bytes	7	0`s Padding	0`s Padding	0`s Padding	0`s Padding	0`s Padding	0`s Padding	0`s Padding	0`s Padding
+Bytes	8	0`s Padding	0`s Padding	0`s Padding	0`s Padding	0`s Padding	0`s Padding	0`s Padding	0`s Padding
+Bytes	G	0`s Padding	0`s Padding	0`s Padding	0`s Padding	0`s Padding	0`s Padding	0`s Padding	0`s Padding
+Bytes	10	0`s Padding	0`s Padding	0`s Padding	0`s Padding	0`s Padding	0`s Padding	0`s Padding	0`s Padding
+Bytes	11	0`s Padding	0`s Padding	0`s Padding	0`s Padding	0`s Padding	0`s Padding	0`s Padding	0`s Padding
+Bytes	12	0`s Padding	0`s Padding	0`s Padding	0`s Padding	0`s Padding	0`s Padding	0`s Padding	0`s Padding
+Bytes	13	0`s Padding	0`s Padding	0`s Padding	0`s Padding	0`s Padding	0`s Padding	0`s Padding	0`s Padding
+Bytes	14	0`s Padding	0`s Padding	0`s Padding	0`s Padding	0`s Padding	0`s Padding	0`s Padding	0`s Padding
+Bytes	15	0`s Padding	0`s Padding	0`s Padding	0`s Padding	0`s Padding	0`s Padding	0`s Padding	0`s Padding
