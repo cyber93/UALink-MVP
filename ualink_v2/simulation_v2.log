@@ -1,0 +1,31 @@
+2026-11-04 18:29:55,200 - UALink2 - INFO - ======================================================================
+2026-11-04 18:29:55,200 - UALink2 - INFO - Starting UALink 2.0 Modular Architecture A-Z Deep Trace Simulation
+2026-11-04 18:29:55,200 - UALink2 - INFO - ======================================================================
+2026-11-04 18:29:55,200 - UALink2 - INFO - [STEP 1] Initializing Enterprise Pod Controller & Topology Discovery
+2026-11-04 18:29:55,200 - UALink2 - INFO - Registered 3 physical accelerator nodes in ScaleUp-Pod-01
+2026-11-04 18:29:55,200 - UALink2 - INFO - Configured Virtual Pod 10 with Accelerators [1, 2] (Tenant A isolated)
+2026-11-04 18:29:55,200 - UALink2 - INFO - 
+[STEP 2] Setting up Pluggable 200G & Chiplet Transport Layers
+2026-11-04 18:29:55,200 - UALink2 - INFO - 200G PAM4 Link connected: 640B Flit framing, 802.3 CRC-32 enabled
+2026-11-04 18:29:55,200 - UALink2 - INFO - In-Package UCIe 3.0 D2D Chiplet Link connected: 64B low-latency streaming
+2026-11-04 18:29:55,200 - UALink2 - INFO - 
+[STEP 3] Originator (Acc-1) Transmitting 64B TL 2.0 Flit over 200G Link
+2026-11-04 18:29:55,200 - UALink2 - DEBUG - UPLI Request: Src=1, Dst=2, Cmd=READ, Addr=0xdeadbeef, Tag=101
+2026-11-04 18:29:55,200 - UALink2 - INFO - Packed into 640B DL Flit (Op=0, Seq=1, CRC-32 computed). Transmitted.
+2026-11-04 18:29:55,200 - UALink2 - INFO - Completer (Acc-2) received and verified 640B Flit (CRC: PASS). TL 2.0 unpacked.
+2026-11-04 18:29:55,200 - UALink2 - INFO - 
+[STEP 4] Executing In-Network Compute (INC) AllReduce Reduction inside Switch
+2026-11-04 18:29:55,200 - UALink2 - INFO - Switch initialized hardware reduction collective ID 505: Op=SUM, DType=FP32, Peers=[1, 2]
+2026-11-04 18:29:55,200 - UALink2 - DEBUG - Acc-1 contribution vector: [10.5, 20.0, 30.25, 40.0]
+2026-11-04 18:29:55,200 - UALink2 - DEBUG - Acc-2 contribution vector: [1.5, 2.0, 0.75, 5.0]
+2026-11-04 18:29:55,200 - UALink2 - INFO - Acc-1 contributed to Switch collective. Status: PENDING other peers (st=-2)
+2026-11-04 18:29:55,200 - UALink2 - INFO - Acc-2 contributed to Switch collective. Status: COLLECTIVE COMPLETE (st=-1)
+2026-11-04 18:29:55,200 - UALink2 - INFO - Switch In-Network Compute Final Vector: (12.0, 22.0, 31.0, 45.0)
+2026-11-04 18:29:55,200 - UALink2 - INFO - 
+[STEP 5] Testing Security Isolation (Virtual Pod Boundary Enforced)
+2026-11-04 18:29:55,200 - UALink2 - INFO - Cross-VirtualPod Request from Acc-1 (VPod 10) to Acc-3 (Unassigned): None (DROPPED)
+2026-11-04 18:29:55,200 - UALink2 - INFO - 
+======================================================================
+2026-11-04 18:29:55,200 - UALink2 - INFO - UALink 2.0 All-in-One End-to-End Simulation SUCCESSFUL!
+2026-11-04 18:29:55,201 - UALink2 - INFO - Deep Trace saved to: C:\Users\samsung\Downloads\NEXT\VarunMusham\UALink-MVP\ualink_v2\simulation_v2.log
+2026-11-04 18:29:55,201 - UALink2 - INFO - ======================================================================
